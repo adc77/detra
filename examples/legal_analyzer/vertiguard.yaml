@@ -1,0 +1,157 @@
+# VertiGuard Configuration for Legal Document Analyzer
+app_name: legal-document-analyzer
+version: "1.0.0"
+environment: production
+
+# Datadog configuration (can be overridden by environment variables)
+datadog:
+  api_key: ${DD_API_KEY}
+  app_key: ${DD_APP_KEY}
+  site: ${DD_SITE}
+  service: legal-analyzer
+  env: production
+  version: "1.0.0"
+
+# Gemini evaluation configuration
+gemini:
+  api_key: ${GOOGLE_API_KEY}
+  model: gemini-1.5-flash
+  temperature: 0.1
+  max_tokens: 1024
+
+# Node definitions
+nodes:
+  extract_entities:
+    description: "Extract legal entities from documents"
+    expected_behaviors:
+      - "Must return valid JSON with 'parties', 'dates', 'amounts' keys"
+      - "Party names must be proper nouns found in the source document"
+      - "Dates must be in ISO 8601 format"
+      - "Amounts must include currency codes"
+    unexpected_behaviors:
+      - "Hallucinated party names not present in source document"
+      - "Fabricated dates or amounts"
+      - "Made-up case citations"
+    adherence_threshold: 0.90
+    latency_warning_ms: 2000
+    latency_critical_ms: 5000
+    security_checks:
+      - pii_detection
+      - sensitive_data_leak
+    tags:
+      - "tier:critical"
+      - "team:legal-ai"
+
+  summarize_document:
+    description: "Summarize legal documents"
+    expected_behaviors:
+      - "Summary must be under 500 words"
+      - "Must preserve key legal terms and definitions"
+      - "Must maintain neutral, objective tone"
+      - "Must not add information not in source"
+    unexpected_behaviors:
+      - "Opinions or interpretations not in source"
+      - "Missing critical clauses or terms"
+      - "Incorrect summarization of obligations"
+    adherence_threshold: 0.85
+    security_checks:
+      - pii_detection
+    tags:
+      - "tier:high"
+
+  answer_query:
+    description: "Answer questions about legal documents"
+    expected_behaviors:
+      - "Answer must be grounded in provided documents"
+      - "Must cite specific sections when making claims"
+      - "Must acknowledge uncertainty when information is unclear"
+    unexpected_behaviors:
+      - "Claims without document support"
+      - "Legal advice or opinions"
+      - "Information from outside provided documents"
+    adherence_threshold: 0.88
+    security_checks:
+      - pii_detection
+      - prompt_injection
+    tags:
+      - "tier:critical"
+
+# Thresholds
+thresholds:
+  adherence_warning: 0.85
+  adherence_critical: 0.70
+  latency_warning_ms: 3000
+  latency_critical_ms: 10000
+  error_rate_warning: 0.05
+  error_rate_critical: 0.15
+  token_usage_warning: 10000
+  token_usage_critical: 50000
+
+# Security configuration
+security:
+  pii_detection_enabled: true
+  pii_patterns:
+    - email
+    - phone
+    - ssn
+    - credit_card
+    - address
+  prompt_injection_detection: true
+  sensitive_topics:
+    - medical_records
+    - financial_details
+  block_on_detection: false
+
+# Integrations
+integrations:
+  slack:
+    enabled: true
+    webhook_url: ${SLACK_WEBHOOK_URL}
+    channel: "#legal-ai-alerts"
+    notify_on:
+      - flag_raised
+      - incident_created
+      - security_issue
+    mention_on_critical:
+      - "@here"
+
+  pagerduty:
+    enabled: false
+    integration_key: ${PAGERDUTY_INTEGRATION_KEY}
+    severity_mapping:
+      critical: critical
+      warning: warning
+      info: info
+
+  webhooks: []
+
+# Custom alerts
+alerts:
+  - name: "High Hallucination Rate"
+    description: "Too many outputs flagged for hallucination"
+    metric: "vertiguard.node.flagged"
+    condition: "gt"
+    threshold: 10
+    window_minutes: 15
+    severity: "warning"
+    notify:
+      - "@slack-legal-ai-alerts"
+    tags:
+      - "category:hallucination"
+
+  - name: "Critical Entity Extraction Failure"
+    description: "Entity extraction success rate too low"
+    metric: "vertiguard.node.adherence_score"
+    condition: "lt"
+    threshold: 0.75
+    window_minutes: 10
+    severity: "critical"
+    notify:
+      - "@pagerduty"
+      - "@slack-legal-ai-alerts"
+    tags:
+      - "node:extract_entities"
+
+# Dashboard
+create_dashboard: true
+dashboard_name: "Legal AI - LLM Observability"

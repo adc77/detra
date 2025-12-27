@@ -1,0 +1,56 @@
+[project]
+name = "vertiguard"
+version = "0.1.0"
+description = "End-to-end LLM observability for vertical AI applications with Datadog"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "ddtrace>=2.10.0",
+    "datadog-api-client>=2.20.0",
+    "datadog>=0.49.0",
+    "google-genai>=0.2.0",
+    "google-cloud-aiplatform>=1.40.0",
+    "tiktoken>=0.5.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "pyyaml>=6.0.1",
+    "httpx>=0.26.0",
+    "structlog>=24.1.0",
+    "tenacity>=8.2.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vertiguard"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
