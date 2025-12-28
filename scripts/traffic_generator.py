@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Traffic Generator for VertiGuard Demo
+VertiGuard Traffic Generator - Tests All Features
 
-Generates realistic traffic patterns to demonstrate detection rules:
-1. Normal requests (passes all checks)
-2. Semantic violations (hallucinations, made-up entities)
-3. PII exposure attempts
-4. High latency scenarios
-5. Format violations
+Generates comprehensive traffic exercising:
+1. LLM adherence monitoring
+2. Error tracking with root cause analysis
+3. Agent workflow monitoring
+4. Security scanning (PII, injection)
+5. Performance monitoring
+6. DSPy optimization triggers
 
-Run: python scripts/traffic_generator.py
+Usage:
+    python scripts/traffic_generator.py --requests 50 --delay 2
 """
 
 import asyncio
@@ -20,394 +22,205 @@ import sys
 import time
 from pathlib import Path
 
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import google.genai as genai
+from google.cloud import aiplatform
+from vertexai.generative_models import GenerativeModel
 import structlog
-
-import vertiguard
+import detra
 from dotenv import load_dotenv
 
 load_dotenv()
-
 logger = structlog.get_logger()
 
 
 class TrafficGenerator:
-    """
-    Generates diverse traffic patterns to test VertiGuard detection rules.
+    """Comprehensive traffic generator testing all VertiGuard features."""
 
-    Traffic patterns:
-    - 60% Normal (should pass)
-    - 15% Semantic violations (hallucinations, wrong data)
-    - 10% PII exposure attempts
-    - 10% Format violations
-    - 5% High latency (simulated slow responses)
-    """
-
-    def __init__(self, config_path: str):
-        """Initialize traffic generator."""
+    def __init__(self, config_path: str, project_id: str, location: str = "us-central1"):
         self.vg = vertiguard.init(config_path)
-
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY not set")
-        self.client = genai.Client(api_key=api_key)
+        aiplatform.init(project=project_id, location=location)
+        self.model = GenerativeModel("gemini-2.0-flash-exp")
 
         self.stats = {
             "total": 0,
-            "normal": 0,
+            "normal_llm": 0,
             "semantic_violation": 0,
+            "agent_workflow": 0,
             "pii_exposure": 0,
             "format_violation": 0,
+            "error_triggered": 0,
             "high_latency": 0,
-            "flagged": 0,
-            "errors": 0,
+            "workflows_completed": 0,
+            "errors_captured": 0,
         }
 
-    async def generate_traffic(
-        self,
-        num_requests: int = 50,
-        delay_between_requests: float = 2.0,
-    ) -> dict:
-        """
-        Generate traffic with mixed patterns.
-
-        Args:
-            num_requests: Total number of requests to generate.
-            delay_between_requests: Delay between requests in seconds.
-
-        Returns:
-            Statistics dictionary.
-        """
-        logger.info(
-            "Starting traffic generation",
-            num_requests=num_requests,
-            delay=delay_between_requests,
-        )
+    async def generate_traffic(self, num_requests: int = 50, delay: float = 2.0):
+        print(f"\nVertiGuard Traffic Generator")
+        print(f"Requests: {num_requests}, Delay: {delay}s")
+        print(f"Testing: LLM + Errors + Agents + Security + Performance\n")
 
         for i in range(num_requests):
             request_type = self._select_request_type()
-            logger.info(f"Request {i+1}/{num_requests}", type=request_type)
+            print(f"[{i+1}/{num_requests}] {request_type}...", end=" ", flush=True)
 
             try:
                 await self._execute_request(request_type)
                 self.stats["total"] += 1
                 self.stats[request_type] += 1
+                print("OK")
             except Exception as e:
-                logger.error("Request failed", error=str(e), type=request_type)
-                self.stats["errors"] += 1
+                print(f"ERROR: {str(e)[:50]}")
+                self.stats["errors_captured"] += 1
 
-            # Delay between requests
             if i < num_requests - 1:
-                await asyncio.sleep(delay_between_requests)
+                await asyncio.sleep(delay)
 
-        # Print final stats
-        self._print_stats()
-
+        self._print_summary()
         return self.stats
 
-    def _select_request_type(self) -> str:
-        """Select request type based on probability distribution."""
+    def _select_request_type(self):
         rand = random.random()
+        if rand < 0.40: return "normal_llm"
+        elif rand < 0.55: return "semantic_violation"
+        elif rand < 0.65: return "agent_workflow"
+        elif rand < 0.75: return "pii_exposure"
+        elif rand < 0.85: return "format_violation"
+        elif rand < 0.95: return "error_triggered"
+        else: return "high_latency"
 
-        if rand < 0.60:
-            return "normal"
-        elif rand < 0.75:
-            return "semantic_violation"
-        elif rand < 0.85:
-            return "pii_exposure"
-        elif rand < 0.95:
-            return "format_violation"
-        else:
-            return "high_latency"
-
-    async def _execute_request(self, request_type: str):
-        """Execute a request based on type."""
-        if request_type == "normal":
-            await self._normal_request()
+    async def _execute_request(self, request_type):
+        if request_type == "normal_llm":
+            await self._normal_llm()
         elif request_type == "semantic_violation":
             await self._semantic_violation()
+        elif request_type == "agent_workflow":
+            await self._agent_workflow()
         elif request_type == "pii_exposure":
             await self._pii_exposure()
         elif request_type == "format_violation":
             await self._format_violation()
+        elif request_type == "error_triggered":
+            await self._error_tracking()
         elif request_type == "high_latency":
-            await self._high_latency_request()
+            await self._high_latency()
 
-    async def _normal_request(self):
-        """Generate a normal request that should pass all checks."""
-        document = self._get_sample_contract()
+    @detra.trace("extract_entities")
+    async def _normal_llm(self):
+        contract = self._random_contract()
+        prompt = f"Extract entities as JSON from: {contract}\nReturn: {{\"parties\": [], \"dates\": [], \"amounts\": []}}"
+        response = await self._call_llm(prompt)
+        return self._parse_json(response)
 
-        # Use the decorated functions from example app
-        result = await self.extract_entities_traced(document)
-
-        logger.info("Normal request completed", has_parties=bool(result.get("parties")))
-
+    @detra.trace("extract_entities")
     async def _semantic_violation(self):
-        """Generate request with hallucinations/made-up data."""
-        # Inject a document with intentionally wrong information
-        bad_document = """
-CONSULTING AGREEMENT
+        contract = "Agreement between A and B."
+        prompt = f"Tell me everything about: {contract}"
+        response = await self._call_llm(prompt)
+        return self._parse_json(response)
 
-This Agreement is between TechCorp Solutions Inc. and LegalTech Partners LLC.
+    async def _agent_workflow(self):
+        workflow_id = self.vg.agent_monitor.start_workflow("doc_processor")
+        self.vg.agent_monitor.track_thought(workflow_id, "Processing contract")
+        self.vg.agent_monitor.track_action(workflow_id, "extract", {})
 
-TERM: January 1, 2024 to December 31, 2025
+        contract = self._random_contract()
+        result = await self._normal_llm.__wrapped__(self, contract)
 
-COMPENSATION: $50,000 per month payable on the 1st of each month.
+        self.vg.agent_monitor.track_tool_call(workflow_id, "llm_extract", {}, result, latency_ms=random.uniform(200, 800))
+        self.vg.agent_monitor.track_observation(workflow_id, "Complete")
+        self.vg.agent_monitor.complete_workflow(workflow_id, result)
+        self.stats["workflows_completed"] += 1
 
-The CEO of TechCorp is Sarah Williams and the CFO is John Anderson.
-
-Contact: ceo@techcorp.com, (555) 123-4567
-"""
-        # This will likely trigger hallucinations as the LLM might add details not in doc
-        result = await self.extract_entities_malicious(bad_document)
-
-        logger.info("Semantic violation request completed")
-
+    @detra.trace("extract_entities")
     async def _pii_exposure(self):
-        """Generate request that attempts to extract PII."""
-        pii_document = """
-Employment Agreement
+        pii_doc = "Employee: Jane Smith\nSSN: 123-45-6789\nEmail: jane@company.com"
+        prompt = f"Extract all info: {pii_doc}"
+        response = await self._call_llm(prompt)
+        return self._parse_json(response)
 
-Employee: Jane Smith
-SSN: 123-45-6789
-Email: jane.smith@email.com
-Phone: (555) 987-6543
-Credit Card: 4532-1234-5678-9012
-
-Annual Salary: $150,000
-"""
-        result = await self.extract_entities_traced(pii_document)
-
-        logger.info("PII exposure request completed")
-
+    @detra.trace("extract_entities")
     async def _format_violation(self):
-        """Generate request that produces invalid format."""
-        # Ask for a response that will violate format expectations
-        document = "Contract between A and B for services."
+        prompt = "Extract entities from: short text"
+        response = await self._call_llm(prompt)
+        return {"raw": response, "invalid": True}
 
-        # Directly call with minimal info to trigger format errors
-        result = await self.extract_entities_minimal(document)
+    async def _error_tracking(self):
+        self.vg.error_tracker.add_breadcrumb("Risky operation", category="test")
+        error_funcs = [
+            lambda: (_ for _ in ()).throw(ValueError("Invalid format")),
+            lambda: {}["missing_key"],
+            lambda: "str" + 123,
+            lambda: 1 / 0,
+        ]
+        try:
+            random.choice(error_funcs)()
+        except Exception as e:
+            self.vg.error_tracker.capture_exception(e, context={"test": True}, level="error")
 
-        logger.info("Format violation request completed")
-
-    async def _high_latency_request(self):
-        """Simulate high latency request."""
-        document = """
-COMPLEX MERGER AGREEMENT
-
-This is an extremely complex 50-page merger agreement between
-multiple parties with extensive terms, conditions, schedules,
-and appendices that would take a long time to process...
-""" * 20  # Make it really long
-
-        # Add artificial delay
-        await asyncio.sleep(3.0)
-
-        result = await self.extract_entities_traced(document)
-
-        logger.info("High latency request completed")
-
-    # Traced functions (decorated with VertiGuard)
-
-    @vertiguard.trace("extract_entities")
-    async def extract_entities_traced(self, document: str) -> dict:
-        """Extract entities (normal flow)."""
-        prompt = f"""Extract entities from this document as JSON:
-{{
-  "parties": ["Party 1", "Party 2"],
-  "dates": ["2024-01-15"],
-  "amounts": ["$10,000"]
-}}
-
-Document:
-{document}
-
-Return ONLY valid JSON:"""
-
+    @detra.trace("extract_entities")
+    async def _high_latency(self):
+        contract = self._random_contract() * 10
+        await asyncio.sleep(random.uniform(2, 4))
+        prompt = f"Analyze: {contract}"
         response = await self._call_llm(prompt)
         return self._parse_json(response)
 
-    @vertiguard.trace("extract_entities")
-    async def extract_entities_malicious(self, document: str) -> dict:
-        """Extract entities (with potential hallucinations)."""
-        # Deliberately vague prompt that encourages hallucinations
-        prompt = f"""Look at this document and tell me about the parties, dates, and money involved.
-Be creative and thorough.
-
-{document}
-
-Give me JSON:"""
-
-        response = await self._call_llm(prompt)
-        return self._parse_json(response)
-
-    @vertiguard.trace("extract_entities")
-    async def extract_entities_minimal(self, document: str) -> dict:
-        """Extract entities with minimal prompt (format violations likely)."""
-        prompt = f"Entities in: {document}"
-
-        response = await self._call_llm(prompt)
-        # Return malformed response
-        return {"raw": response, "malformed": True}
-
-    async def _call_llm(self, prompt: str) -> str:
-        """Call Gemini API."""
+    async def _call_llm(self, prompt: str):
         loop = asyncio.get_event_loop()
-
         def generate():
-            response = self.client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt,
-            )
-            if hasattr(response, "text"):
-                return response.text
-            elif hasattr(response, "candidates") and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate.content, "parts"):
-                    parts = candidate.content.parts
-                    if parts and hasattr(parts[0], "text"):
-                        return parts[0].text
-            return str(response)
-
+            response = self.model.generate_content(prompt)
+            return response.text
         return await loop.run_in_executor(None, generate)
 
-    def _parse_json(self, text: str) -> dict:
-        """Parse JSON from LLM response."""
+    def _parse_json(self, text):
         text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
         if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
+            text = text.split("```")[1]
+            if text.startswith("json"): text = text[4:]
         text = text.strip()
-
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            return {"error": "Invalid JSON", "raw": text}
+            return {"error": "Invalid JSON", "raw": text[:200]}
 
-    def _get_sample_contract(self) -> str:
-        """Get a sample contract for normal requests."""
-        contracts = [
-            """
-CONSULTING AGREEMENT
+    def _random_contract(self):
+        return random.choice([
+            "CONSULTING AGREEMENT\nTechCorp and Partners\nDate: 2024-01-15\nFee: $10,000/month",
+            "SERVICE AGREEMENT\nDataTech and Enterprise\nStart: 2024-02-01\nCost: $120,000/year",
+            "LICENSE AGREEMENT\nSoftwareCo and Business Ltd\nLicense: $5,000/year\nTerm: 3 years",
+        ])
 
-Agreement between TechCorp Solutions Inc. and Advisory Partners LLC.
-Effective Date: January 15, 2024
-Term: 12 months
-Monthly Fee: $10,000
-""",
-            """
-SERVICE AGREEMENT
-
-Provider: DataTech Services
-Client: Enterprise Corp
-Start Date: February 1, 2024
-Annual Cost: $120,000
-""",
-            """
-LICENSING AGREEMENT
-
-Licensor: SoftwareCo Inc.
-Licensee: Business Solutions Ltd.
-License Fee: $5,000 per year
-Term: 3 years starting March 1, 2024
-"""
-        ]
-        return random.choice(contracts)
-
-    def _print_stats(self):
-        """Print traffic generation statistics."""
-        print("\n" + "="*60)
-        print("TRAFFIC GENERATION COMPLETE")
-        print("="*60)
-        print(f"Total Requests: {self.stats['total']}")
-        print(f"Errors: {self.stats['errors']}")
-        print("\nRequest Type Distribution:")
-        print(f"  Normal:              {self.stats['normal']:3d} ({self.stats['normal']/max(self.stats['total'],1)*100:5.1f}%)")
-        print(f"  Semantic Violations: {self.stats['semantic_violation']:3d} ({self.stats['semantic_violation']/max(self.stats['total'],1)*100:5.1f}%)")
-        print(f"  PII Exposure:        {self.stats['pii_exposure']:3d} ({self.stats['pii_exposure']/max(self.stats['total'],1)*100:5.1f}%)")
-        print(f"  Format Violations:   {self.stats['format_violation']:3d} ({self.stats['format_violation']/max(self.stats['total'],1)*100:5.1f}%)")
-        print(f"  High Latency:        {self.stats['high_latency']:3d} ({self.stats['high_latency']/max(self.stats['total'],1)*100:5.1f}%)")
-        print("="*60)
-        print("\nCheck your Datadog dashboard for:")
-        print("  - Adherence score trends")
-        print("  - Flagged requests")
-        print("  - Security issues detected")
-        print("  - Latency distributions")
-        print("  - Triggered monitors")
-        print("="*60 + "\n")
+    def _print_summary(self):
+        print(f"\nTraffic Generation Complete")
+        print(f"Total: {self.stats['total']}")
+        print(f"  Normal LLM: {self.stats['normal_llm']}")
+        print(f"  Semantic Violations: {self.stats['semantic_violation']}")
+        print(f"  Agent Workflows: {self.stats['agent_workflow']} ({self.stats['workflows_completed']} completed)")
+        print(f"  PII Exposure: {self.stats['pii_exposure']}")
+        print(f"  Format Violations: {self.stats['format_violation']}")
+        print(f"  Errors: {self.stats['error_triggered']}")
+        print(f"  High Latency: {self.stats['high_latency']}")
+        print(f"\nCheck Datadog dashboard for live metrics")
 
 
 async def main():
-    """Main entry point."""
     import argparse
-
-    parser = argparse.ArgumentParser(description="Generate traffic for VertiGuard demo")
-    parser.add_argument(
-        "--config",
-        default="examples/legal_analyzer/vertiguard.yaml",
-        help="Path to vertiguard.yaml config",
-    )
-    parser.add_argument(
-        "--requests",
-        type=int,
-        default=50,
-        help="Number of requests to generate",
-    )
-    parser.add_argument(
-        "--delay",
-        type=float,
-        default=2.0,
-        help="Delay between requests in seconds",
-    )
-
+    parser = argparse.ArgumentParser(description="VertiGuard traffic generator")
+    parser.add_argument("--config", default="examples/legal_analyzer/detra.yaml")
+    parser.add_argument("--requests", type=int, default=50)
+    parser.add_argument("--delay", type=float, default=2.0)
+    parser.add_argument("--project", required=True, help="GCP project ID")
+    parser.add_argument("--location", default="us-central1")
     args = parser.parse_args()
 
-    # Check environment variables
-    required_vars = ["DD_API_KEY", "DD_APP_KEY", "GOOGLE_API_KEY"]
-    missing = [v for v in required_vars if not os.getenv(v)]
-
-    if missing:
-        print(f"ERROR: Missing required environment variables: {', '.join(missing)}")
-        print("\nSet them with:")
-        for var in missing:
-            print(f"  export {var}=your_key_here")
-        sys.exit(1)
-
-    print("="*60)
-    print("VertiGuard Traffic Generator")
-    print("="*60)
-    print(f"Config: {args.config}")
-    print(f"Requests: {args.requests}")
-    print(f"Delay: {args.delay}s between requests")
-    print("="*60 + "\n")
-
-    generator = TrafficGenerator(args.config)
-
+    generator = TrafficGenerator(args.config, args.project, args.location)
     try:
-        stats = await generator.generate_traffic(
-            num_requests=args.requests,
-            delay_between_requests=args.delay,
-        )
-
-        # Close VertiGuard client
+        await generator.generate_traffic(args.requests, args.delay)
         await generator.vg.close()
-
-        print("\n✅ Traffic generation completed successfully!")
-
     except KeyboardInterrupt:
-        print("\n\n⚠️  Traffic generation interrupted by user")
+        print("\nInterrupted")
         await generator.vg.close()
-    except Exception as e:
-        print(f"\n\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
 
 
 if __name__ == "__main__":

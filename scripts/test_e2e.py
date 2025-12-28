@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import structlog
 
-import vertiguard
+import detra
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -172,7 +172,7 @@ class E2ETestSuite:
 
     async def test_root_cause_analysis(self):
         """Test root cause analyzer."""
-        from vertiguard.optimization.root_cause import RootCauseAnalyzer
+        from detra.optimization.root_cause import RootCauseAnalyzer
 
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -227,8 +227,8 @@ async def main():
     parser = argparse.ArgumentParser(description="Run VertiGuard E2E tests")
     parser.add_argument(
         "--config",
-        default="examples/legal_analyzer/vertiguard.yaml",
-        help="Path to vertiguard.yaml config",
+        default="examples/legal_analyzer/detra.yaml",
+        help="Path to detra.yaml config",
     )
 
     args = parser.parse_args()
