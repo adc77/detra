@@ -18,7 +18,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
         "title": f"VertiGuard: {app_name} LLM Observability",
         "description": "End-to-end LLM observability dashboard with health metrics, security signals, and actionable insights",
         "widgets": [
-            # Row 1: Health Overview - Individual widgets instead of nested group
+            # Row 1: Health Overview - 4 query value widgets
             {
                 "definition": {
                     "title": "Overall Adherence Score",
@@ -26,12 +26,11 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                     "requests": [
                         {
                             "q": "avg:vertiguard.node.adherence_score{*}",
-                            "aggregator": "avg",
                         }
                     ],
                     "precision": 2,
-                    "text_align": "center",
-                }
+                },
+                "layout": {"x": 0, "y": 0, "width": 3, "height": 2},
             },
             {
                 "definition": {
@@ -40,13 +39,12 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                     "requests": [
                         {
                             "q": "sum:vertiguard.node.flagged{*}.as_count() / sum:vertiguard.node.calls{*}.as_count() * 100",
-                            "aggregator": "avg",
                         }
                     ],
                     "precision": 1,
                     "custom_unit": "%",
-                    "text_align": "center",
-                }
+                },
+                "layout": {"x": 3, "y": 0, "width": 3, "height": 2},
             },
             {
                 "definition": {
@@ -55,13 +53,12 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                     "requests": [
                         {
                             "q": "sum:vertiguard.node.calls{status:error}.as_count() / sum:vertiguard.node.calls{*}.as_count() * 100",
-                            "aggregator": "avg",
                         }
                     ],
                     "precision": 1,
                     "custom_unit": "%",
-                    "text_align": "center",
-                }
+                },
+                "layout": {"x": 6, "y": 0, "width": 3, "height": 2},
             },
             {
                 "definition": {
@@ -70,15 +67,14 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                     "requests": [
                         {
                             "q": "avg:vertiguard.node.latency{*}",
-                            "aggregator": "avg",
                         }
                     ],
                     "precision": 0,
                     "custom_unit": "ms",
-                    "text_align": "center",
-                }
+                },
+                "layout": {"x": 9, "y": 0, "width": 3, "height": 2},
             },
-            # Row 2: Adherence Trends
+            # Row 2: Adherence Trends - full width
             {
                 "definition": {
                     "title": "Adherence Score Over Time",
@@ -94,9 +90,10 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                         {"value": "y = 0.70", "display_type": "error dashed"},
                     ],
                     "yaxis": {"min": "0", "max": "1"},
-                }
+                },
+                "layout": {"x": 0, "y": 2, "width": 12, "height": 3},
             },
-            # Row 3: Flag Analysis
+            # Row 3: Flag Analysis - 2 widgets side by side
             {
                 "definition": {
                     "title": "Flags by Category",
@@ -107,7 +104,8 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "style": {"palette": "warm"},
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 5, "width": 6, "height": 3},
             },
             {
                 "definition": {
@@ -119,9 +117,10 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "style": {"palette": "orange"},
                         }
                     ],
-                }
+                },
+                "layout": {"x": 6, "y": 5, "width": 6, "height": 3},
             },
-            # Row 4: Security Signals - Individual widgets instead of nested group
+            # Row 4: Security Signals - 2 widgets side by side
             {
                 "definition": {
                     "title": "Security Issues by Type",
@@ -132,7 +131,8 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "style": {"palette": "red"},
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 8, "width": 6, "height": 3},
             },
             {
                 "definition": {
@@ -144,15 +144,17 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "display_type": "bars",
                         }
                     ],
-                }
+                },
+                "layout": {"x": 6, "y": 8, "width": 6, "height": 3},
             },
-            # Row 5: Performance
+            # Row 5: Performance - 2 widgets side by side
             {
                 "definition": {
                     "title": "Latency Distribution",
                     "type": "heatmap",
                     "requests": [{"q": "avg:vertiguard.node.latency{*} by {node}"}],
-                }
+                },
+                "layout": {"x": 0, "y": 11, "width": 6, "height": 3},
             },
             {
                 "definition": {
@@ -163,9 +165,10 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                         {"q": "p95:vertiguard.node.latency{*}", "display_type": "line"},
                         {"q": "p99:vertiguard.node.latency{*}", "display_type": "line"},
                     ],
-                }
+                },
+                "layout": {"x": 6, "y": 11, "width": 6, "height": 3},
             },
-            # Row 6: Token Usage & Costs
+            # Row 6: Token Usage - full width
             {
                 "definition": {
                     "title": "Evaluation Token Usage",
@@ -176,9 +179,10 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "display_type": "bars",
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 14, "width": 12, "height": 3},
             },
-            # Row 7: Call Volume
+            # Row 7: Call Volume - full width
             {
                 "definition": {
                     "title": "Call Volume by Node",
@@ -189,18 +193,20 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                             "display_type": "bars",
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 17, "width": 12, "height": 3},
             },
-            # Row 8: Events Stream
+            # Row 8: Events Stream - full width
             {
                 "definition": {
                     "title": "Recent Events",
                     "type": "event_stream",
                     "query": "sources:vertiguard",
                     "event_size": "s",
-                }
+                },
+                "layout": {"x": 0, "y": 20, "width": 12, "height": 3},
             },
-            # Row 9: Monitor Summary
+            # Row 9: Monitor Summary - full width
             {
                 "definition": {
                     "title": "Monitor Status",
@@ -208,16 +214,16 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict[str
                     "query": "tag:(source:vertiguard)",
                     "sort": "status,asc",
                     "display_format": "countsAndList",
-                }
+                },
+                "layout": {"x": 0, "y": 23, "width": 12, "height": 3},
             },
         ],
         "template_variables": [
             {"name": "node", "prefix": "node", "default": "*"},
             {"name": "env", "prefix": "env", "default": env},
         ],
-        "layout_type": "ordered",
+        "layout_type": "free",
         "notify_list": [],
-        "reflow_type": "fixed",
     }
 
 
@@ -242,11 +248,11 @@ def get_minimal_dashboard_definition(app_name: str) -> dict[str, Any]:
                     "requests": [
                         {
                             "q": "avg:vertiguard.node.adherence_score{*}",
-                            "aggregator": "avg",
                         }
                     ],
                     "precision": 2,
-                }
+                },
+                "layout": {"x": 0, "y": 0, "width": 4, "height": 2},
             },
             {
                 "definition": {
@@ -258,7 +264,8 @@ def get_minimal_dashboard_definition(app_name: str) -> dict[str, Any]:
                             "display_type": "line",
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 2, "width": 12, "height": 3},
             },
             {
                 "definition": {
@@ -270,8 +277,10 @@ def get_minimal_dashboard_definition(app_name: str) -> dict[str, Any]:
                             "display_type": "bars",
                         }
                     ],
-                }
+                },
+                "layout": {"x": 0, "y": 5, "width": 12, "height": 3},
             },
         ],
-        "layout_type": "ordered",
+        "layout_type": "free",
+        "notify_list": [],
     }

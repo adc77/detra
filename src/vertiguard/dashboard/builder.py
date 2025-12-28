@@ -14,6 +14,7 @@ class WidgetBuilder:
         precision: int = 2,
         unit: str = "",
         conditional_formats: Optional[list[dict]] = None,
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create a query value widget.
@@ -25,6 +26,7 @@ class WidgetBuilder:
             precision: Decimal precision.
             unit: Custom unit.
             conditional_formats: Color thresholds.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
@@ -33,7 +35,7 @@ class WidgetBuilder:
             "definition": {
                 "title": title,
                 "type": "query_value",
-                "requests": [{"q": query, "aggregator": aggregator}],
+                "requests": [{"q": query}],
                 "precision": precision,
             }
         }
@@ -44,6 +46,9 @@ class WidgetBuilder:
         if conditional_formats:
             widget["definition"]["conditional_formats"] = conditional_formats
 
+        if layout:
+            widget["layout"] = layout
+
         return widget
 
     @staticmethod
@@ -52,6 +57,7 @@ class WidgetBuilder:
         queries: list[dict[str, str]],
         markers: Optional[list[dict]] = None,
         yaxis: Optional[dict[str, str]] = None,
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create a timeseries widget.
@@ -61,6 +67,7 @@ class WidgetBuilder:
             queries: List of query definitions with q and display_type.
             markers: Optional threshold markers.
             yaxis: Y-axis configuration.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
@@ -86,6 +93,9 @@ class WidgetBuilder:
         if yaxis:
             widget["definition"]["yaxis"] = yaxis
 
+        if layout:
+            widget["layout"] = layout
+
         return widget
 
     @staticmethod
@@ -93,6 +103,7 @@ class WidgetBuilder:
         title: str,
         query: str,
         palette: str = "dog_classic",
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create a toplist widget.
@@ -101,11 +112,12 @@ class WidgetBuilder:
             title: Widget title.
             query: Metric query.
             palette: Color palette.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
         """
-        return {
+        widget = {
             "definition": {
                 "title": title,
                 "type": "toplist",
@@ -113,19 +125,29 @@ class WidgetBuilder:
             }
         }
 
+        if layout:
+            widget["layout"] = layout
+
+        return widget
+
     @staticmethod
-    def heatmap(title: str, query: str) -> dict[str, Any]:
+    def heatmap(
+        title: str,
+        query: str,
+        layout: Optional[dict[str, int]] = None,
+    ) -> dict[str, Any]:
         """
         Create a heatmap widget.
 
         Args:
             title: Widget title.
             query: Metric query.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
         """
-        return {
+        widget = {
             "definition": {
                 "title": title,
                 "type": "heatmap",
@@ -133,11 +155,17 @@ class WidgetBuilder:
             }
         }
 
+        if layout:
+            widget["layout"] = layout
+
+        return widget
+
     @staticmethod
     def event_stream(
         title: str,
         query: str,
         size: str = "s",
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create an event stream widget.
@@ -146,11 +174,12 @@ class WidgetBuilder:
             title: Widget title.
             query: Event query.
             size: Event size (s, l).
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
         """
-        return {
+        widget = {
             "definition": {
                 "title": title,
                 "type": "event_stream",
@@ -158,6 +187,11 @@ class WidgetBuilder:
                 "event_size": size,
             }
         }
+
+        if layout:
+            widget["layout"] = layout
+
+        return widget
 
     @staticmethod
     def group(
@@ -190,6 +224,7 @@ class WidgetBuilder:
         title: str,
         query: str,
         display_format: str = "countsAndList",
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create a monitor summary widget.
@@ -198,11 +233,12 @@ class WidgetBuilder:
             title: Widget title.
             query: Monitor query.
             display_format: Display format.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
         """
-        return {
+        widget = {
             "definition": {
                 "title": title,
                 "type": "manage_status",
@@ -212,11 +248,17 @@ class WidgetBuilder:
             }
         }
 
+        if layout:
+            widget["layout"] = layout
+
+        return widget
+
     @staticmethod
     def note(
         content: str,
         background_color: str = "white",
         font_size: str = "14",
+        layout: Optional[dict[str, int]] = None,
     ) -> dict[str, Any]:
         """
         Create a note widget.
@@ -225,11 +267,12 @@ class WidgetBuilder:
             content: Markdown content.
             background_color: Background color.
             font_size: Font size.
+            layout: Widget layout (x, y, width, height) for free layout dashboards.
 
         Returns:
             Widget definition.
         """
-        return {
+        widget = {
             "definition": {
                 "type": "note",
                 "content": content,
@@ -237,6 +280,11 @@ class WidgetBuilder:
                 "font_size": font_size,
             }
         }
+
+        if layout:
+            widget["layout"] = layout
+
+        return widget
 
 
 class DashboardBuilder:
@@ -254,7 +302,7 @@ class DashboardBuilder:
         self.description = description
         self.widgets: list[dict[str, Any]] = []
         self.template_variables: list[dict[str, str]] = []
-        self.layout_type = "ordered"
+        self.layout_type = "free"
 
     def add_widget(self, widget: dict[str, Any]) -> "DashboardBuilder":
         """
@@ -320,7 +368,6 @@ class DashboardBuilder:
             "template_variables": self.template_variables,
             "layout_type": self.layout_type,
             "notify_list": [],
-            "reflow_type": "fixed",
         }
 
     @classmethod
@@ -348,8 +395,8 @@ class DashboardBuilder:
         builder.add_template_variable("node", "node")
         builder.add_template_variable("env", "env", default=env)
 
-        # Add health overview
-        health_widgets = [
+        # Add health overview widgets with layouts
+        builder.add_widget(
             WidgetBuilder.query_value(
                 "Adherence Score",
                 "avg:vertiguard.node.adherence_score{*}",
@@ -358,15 +405,18 @@ class DashboardBuilder:
                     {"comparator": ">=", "value": 0.70, "palette": "white_on_yellow"},
                     {"comparator": "<", "value": 0.70, "palette": "white_on_red"},
                 ],
-            ),
+                layout={"x": 0, "y": 0, "width": 6, "height": 2},
+            )
+        )
+        builder.add_widget(
             WidgetBuilder.query_value(
                 "Flag Rate",
                 "sum:vertiguard.node.flagged{*}.as_count() / sum:vertiguard.node.calls{*}.as_count() * 100",
                 unit="%",
                 precision=1,
-            ),
-        ]
-        builder.add_widget(WidgetBuilder.group("Health Overview", health_widgets))
+                layout={"x": 6, "y": 0, "width": 6, "height": 2},
+            )
+        )
 
         # Add adherence trend
         builder.add_widget(
@@ -378,6 +428,7 @@ class DashboardBuilder:
                     {"value": "y = 0.70", "display_type": "error dashed"},
                 ],
                 yaxis={"min": "0", "max": "1"},
+                layout={"x": 0, "y": 2, "width": 12, "height": 3},
             )
         )
 
@@ -387,6 +438,7 @@ class DashboardBuilder:
                 "Flags by Category",
                 "sum:vertiguard.node.flagged{*} by {category}.as_count()",
                 palette="warm",
+                layout={"x": 0, "y": 5, "width": 6, "height": 3},
             )
         )
 
@@ -395,6 +447,7 @@ class DashboardBuilder:
             WidgetBuilder.timeseries(
                 "Call Volume",
                 [{"q": "sum:vertiguard.node.calls{*} by {node}.as_count()", "display_type": "bars"}],
+                layout={"x": 6, "y": 5, "width": 6, "height": 3},
             )
         )
 

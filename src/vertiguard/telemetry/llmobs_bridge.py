@@ -52,6 +52,9 @@ class LLMObsBridge:
             os.environ.setdefault("DD_LLMOBS_ENABLED", "1")
             os.environ.setdefault("DD_LLMOBS_ML_APP", self.config.app_name)
             os.environ.setdefault("DD_LLMOBS_AGENTLESS_ENABLED", "1")
+            # Disable local agent for regular traces (we're using agentless mode)
+            os.environ.setdefault("DD_TRACE_AGENT_URL", "")
+            os.environ.setdefault("DD_AGENT_HOST", "")
 
             if self.config.datadog.env:
                 os.environ.setdefault("DD_ENV", self.config.datadog.env)
