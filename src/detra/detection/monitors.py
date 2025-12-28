@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 import structlog
 
-from detra.config.schema import AlertConfig, ThresholdsConfig, VertiGuardConfig
+from detra.config.schema import AlertConfig, ThresholdsConfig, detraConfig
 from detra.detection.templates import MONITOR_TEMPLATES, get_monitor_template
 from detra.telemetry.datadog_client import DatadogClient
 
@@ -41,19 +41,19 @@ class MonitorDefinition:
 
 class MonitorManager:
     """
-    Manages Datadog monitors for VertiGuard.
+    Manages Datadog monitors for detra.
 
     Handles creation, listing, and management of
     monitors based on configuration.
     """
 
-    def __init__(self, datadog_client: DatadogClient, config: VertiGuardConfig):
+    def __init__(self, datadog_client: DatadogClient, config: detraConfig):
         """
         Initialize the monitor manager.
 
         Args:
             datadog_client: Datadog client instance.
-            config: VertiGuard configuration.
+            config: detra configuration.
         """
         self.client = datadog_client
         self.config = config
@@ -116,14 +116,27 @@ class MonitorManager:
             logger.error(f"Unknown monitor template: {monitor_key}")
             return None
 
+        monitor_name = template["name"]
+        
+        # Check if monitor already exists
+        existing_monitors = await self.client.list_monitors(name_filter=monitor_name)
+        for existing in existing_monitors:
+            if existing["name"] == monitor_name:
+                logger.info(
+                    "Monitor already exists, skipping creation",
+                    name=monitor_name,
+                    id=existing.get("id"),
+                )
+                return {"id": existing.get("id"), "name": existing["name"]}
+
         return await self.client.create_monitor(
-            name=template["name"],
+            name=monitor_name,
             query=template["query"],
             message=template["message"],
             monitor_type=template["type"],
             thresholds=template["thresholds"],
             priority=template.get("priority"),
-            tags=[f"app:{self.config.app_name}", "source:vertiguard"],
+            tags=[f"app:{self.config.app_name}", "source:detra"],
         )
 
     async def create_custom_monitors(
@@ -170,17 +183,30 @@ class MonitorManager:
 {notify_str}
 """
 
+        monitor_name = f"detra: {alert.name}"
+        
+        # Check if monitor already exists
+        existing_monitors = await self.client.list_monitors(name_filter=monitor_name)
+        for existing in existing_monitors:
+            if existing["name"] == monitor_name:
+                logger.info(
+                    "Monitor already exists, skipping creation",
+                    name=monitor_name,
+                    id=existing.get("id"),
+                )
+                return {"id": existing.get("id"), "name": existing["name"]}
+
         return await self.client.create_monitor(
-            name=f"VertiGuard: {alert.name}",
+            name=monitor_name,
             query=query,
             message=message,
             thresholds={"critical": alert.threshold},
-            tags=alert.tags + [f"app:{self.config.app_name}", "source:vertiguard"],
+            tags=alert.tags + [f"app:{self.config.app_name}", "source:detra"],
         )
 
     async def list_monitors(self) -> list[dict]:
-        """List all VertiGuard monitors."""
-        return await self.client.list_monitors(name_filter="VertiGuard:")
+        """List all detra monitors."""
+        return await self.client.list_monitors(name_filter="detra:")
 
     async def create_monitor_from_definition(
         self, definition: MonitorDefinition

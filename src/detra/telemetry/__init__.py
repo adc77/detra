@@ -1,4 +1,4 @@
-"""Telemetry and observability components for VertiGuard."""
+"""Telemetry and observability components for detra."""
 
 from detra.telemetry.datadog_client import DatadogClient
 from detra.telemetry.llmobs_bridge import LLMObsBridge

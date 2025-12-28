@@ -33,7 +33,7 @@ class MetricPoint:
 
 class MetricsSubmitter:
     """
-    High-level interface for submitting VertiGuard metrics.
+    High-level interface for submitting detra metrics.
 
     Provides semantic methods for common metric types like
     latency, adherence scores, and flag counts.
@@ -82,7 +82,7 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.node.latency",
+                    "metric": "detra.node.latency",
                     "type": "distribution",
                     "points": [[time.time(), latency_ms]],
                     "tags": tags,
@@ -114,7 +114,7 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.node.adherence_score",
+                    "metric": "detra.node.adherence_score",
                     "type": "gauge",
                     "points": [[time.time(), score]],
                     "tags": tags,
@@ -153,7 +153,7 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.node.calls",
+                    "metric": "detra.node.calls",
                     "type": "count",
                     "points": [[time.time(), 1]],
                     "tags": tags,
@@ -187,7 +187,7 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.node.flagged",
+                    "metric": "detra.node.flagged",
                     "type": "count",
                     "points": [[time.time(), 1]],
                     "tags": tags,
@@ -222,13 +222,13 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.evaluation.latency",
+                    "metric": "detra.evaluation.latency",
                     "type": "distribution",
                     "points": [[ts, eval_latency_ms]],
                     "tags": tags,
                 },
                 {
-                    "metric": "vertiguard.evaluation.tokens",
+                    "metric": "detra.evaluation.tokens",
                     "type": "count",
                     "points": [[ts, tokens_used]],
                     "tags": tags,
@@ -267,7 +267,7 @@ class MetricsSubmitter:
         return await self.client.submit_metrics(
             [
                 {
-                    "metric": "vertiguard.security.issues",
+                    "metric": "detra.security.issues",
                     "type": "count",
                     "points": [[time.time(), 1]],
                     "tags": tags,

@@ -68,8 +68,8 @@ class ComprehensiveLegalAnalyzer:
             api_key: Google Gemini API key.
             config_path: Path to VertiGuard config.
         """
-        # Initialize VertiGuard
-        self.vg = vertiguard.init(config_path)
+        # Initialize detra
+        self.vg = detra.init(config_path)
 
         # Initialize Gemini 2.0 Flash
         self.api_key = api_key

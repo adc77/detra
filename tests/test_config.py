@@ -8,7 +8,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from vertiguard.config.schema import (
+from detra.config.schema import (
     AlertConfig,
     DatadogConfig,
     Environment,
@@ -16,9 +16,9 @@ from vertiguard.config.schema import (
     NodeConfig,
     SecurityConfig,
     ThresholdsConfig,
-    VertiGuardConfig,
+    detraConfig,
 )
-from vertiguard.config.loader import (
+from detra.config.loader import (
     load_config,
     get_config,
     get_node_config,
@@ -122,13 +122,13 @@ class TestGeminiConfig:
 
     def test_valid_gemini_config(self, sample_gemini_config):
         """Test creating a valid GeminiConfig."""
-        assert sample_gemini_config.model == "gemini-1.5-flash"
+        assert sample_gemini_config.model == "gemini-2.5-flash"
         assert sample_gemini_config.temperature == 0.1
 
     def test_gemini_config_defaults(self):
         """Test GeminiConfig default values."""
         config = GeminiConfig(api_key="key")
-        assert config.model == "gemini-1.5-flash"
+        assert config.model == "gemini-2.5-flash"
         assert config.temperature == 0.1
         assert config.max_tokens == 1024
 
@@ -165,21 +165,21 @@ class TestThresholdsConfig:
         assert config.latency_warning_ms == 3000
 
 
-class TestVertiGuardConfig:
-    """Tests for VertiGuardConfig schema."""
+class TestdetraConfig:
+    """Tests for detraConfig schema."""
 
-    def test_valid_vertiguard_config(self, sample_vertiguard_config):
-        """Test creating a valid VertiGuardConfig."""
-        assert sample_vertiguard_config.app_name == "test-app"
-        assert sample_vertiguard_config.environment == Environment.DEVELOPMENT
-        assert "extract_entities" in sample_vertiguard_config.nodes
+    def test_valid_detra_config(self, sample_detra_config):
+        """Test creating a valid detraConfig."""
+        assert sample_detra_config.app_name == "test-app"
+        assert sample_detra_config.environment == Environment.DEVELOPMENT
+        assert "extract_entities" in sample_detra_config.nodes
 
     def test_app_name_validation(self):
         """Test app_name must be valid for Datadog ml_app."""
         # Valid app names
         valid_names = ["my-app", "my_app", "myapp123", "app.name"]
         for name in valid_names:
-            config = VertiGuardConfig(
+            config = detraConfig(
                 app_name=name,
                 version="1.0.0",
                 datadog=DatadogConfig(
@@ -263,22 +263,22 @@ class TestConfigLoader:
         assert config.datadog.api_key == "test_dd_api_key"
         assert config.gemini.api_key == "test_google_key"
 
-    def test_get_set_config(self, sample_vertiguard_config):
+    def test_get_set_config(self, sample_detra_config):
         """Test global config getter and setter."""
-        set_config(sample_vertiguard_config)
+        set_config(sample_detra_config)
         retrieved = get_config()
-        assert retrieved.app_name == sample_vertiguard_config.app_name
+        assert retrieved.app_name == sample_detra_config.app_name
 
-    def test_get_node_config(self, sample_vertiguard_config, sample_node_config):
+    def test_get_node_config(self, sample_detra_config, sample_node_config):
         """Test getting node config by name."""
-        set_config(sample_vertiguard_config)
+        set_config(sample_detra_config)
         node = get_node_config("extract_entities")
         assert node is not None
         assert node.description == sample_node_config.description
 
-    def test_get_node_config_not_found(self, sample_vertiguard_config):
+    def test_get_node_config_not_found(self, sample_detra_config):
         """Test getting non-existent node returns None."""
-        set_config(sample_vertiguard_config)
+        set_config(sample_detra_config)
         node = get_node_config("nonexistent_node")
         assert node is None
 
@@ -291,7 +291,7 @@ class TestAlertConfig:
         config = AlertConfig(
             name="High Error Rate",
             description="Too many errors",
-            metric="vertiguard.errors",
+            metric="detra.errors",
             condition="gt",
             threshold=10.0,
             window_minutes=15,
@@ -320,7 +320,7 @@ class TestEdgeCases:
 
     def test_empty_nodes(self):
         """Test config with no nodes defined."""
-        config = VertiGuardConfig(
+        config = detraConfig(
             app_name="empty-app",
             version="1.0.0",
             datadog=DatadogConfig(
@@ -343,7 +343,7 @@ class TestEdgeCases:
 
     def test_config_with_all_integrations_disabled(self):
         """Test config with all integrations disabled."""
-        from vertiguard.config.schema import IntegrationsConfig, SlackConfig
+        from detra.config.schema import IntegrationsConfig, SlackConfig
 
         config = IntegrationsConfig(
             slack=SlackConfig(enabled=False),

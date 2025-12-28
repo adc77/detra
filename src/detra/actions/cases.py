@@ -27,7 +27,7 @@ class CasePriority(str, Enum):
 class CaseNote:
     """A note on a case."""
     content: str
-    author: str = "vertiguard"
+    author: str = "detra"
     timestamp: float = field(default_factory=time.time)
 
 
@@ -54,7 +54,7 @@ class Case:
     tags: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def add_note(self, content: str, author: str = "vertiguard") -> None:
+    def add_note(self, content: str, author: str = "detra") -> None:
         """Add a note to the case."""
         self.notes.append(CaseNote(content=content, author=author))
         self.updated_at = time.time()

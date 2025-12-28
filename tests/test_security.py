@@ -2,14 +2,14 @@
 
 import pytest
 
-from vertiguard.security.scanners import (
+from detra.security.scanners import (
     PIIScanner,
     PromptInjectionScanner,
     ContentScanner,
     ScanResult,
     SecurityScanner,
 )
-from vertiguard.security.signals import (
+from detra.security.signals import (
     SecuritySignal,
     SecuritySignalManager,
     SignalSeverity,

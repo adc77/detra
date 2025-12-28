@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-from vertiguard.config.schema import DatadogConfig, VertiGuardConfig
-from vertiguard.telemetry.datadog_client import DatadogClient
-from vertiguard.telemetry.llmobs_bridge import LLMObsBridge
+from detra.config.schema import DatadogConfig, detraConfig
+from detra.telemetry.datadog_client import DatadogClient
+from detra.telemetry.llmobs_bridge import LLMObsBridge
 
 
 class TestDatadogClient:
@@ -22,12 +22,12 @@ class TestDatadogClient:
     @pytest.fixture
     def client(self, config):
         """Create a DatadogClient with mocked APIs."""
-        with patch("vertiguard.telemetry.datadog_client.MetricsApi") as mock_metrics:
-            with patch("vertiguard.telemetry.datadog_client.EventsApi") as mock_events:
-                with patch("vertiguard.telemetry.datadog_client.MonitorsApi") as mock_monitors:
-                    with patch("vertiguard.telemetry.datadog_client.DashboardsApi") as mock_dashboards:
-                        with patch("vertiguard.telemetry.datadog_client.IncidentsApi") as mock_incidents:
-                            with patch("vertiguard.telemetry.datadog_client.ServiceChecksApi") as mock_service_checks:
+        with patch("detra.telemetry.datadog_client.MetricsApi") as mock_metrics:
+            with patch("detra.telemetry.datadog_client.EventsApi") as mock_events:
+                with patch("detra.telemetry.datadog_client.MonitorsApi") as mock_monitors:
+                    with patch("detra.telemetry.datadog_client.DashboardsApi") as mock_dashboards:
+                        with patch("detra.telemetry.datadog_client.IncidentsApi") as mock_incidents:
+                            with patch("detra.telemetry.datadog_client.ServiceChecksApi") as mock_service_checks:
                                 client = DatadogClient(config)
 
                                 # Setup mock return values
@@ -54,7 +54,7 @@ class TestDatadogClient:
         """Test submitting metrics to Datadog."""
         metrics = [
             {
-                "metric": "vertiguard.test.metric",
+                "metric": "detra.test.metric",
                 "type": "gauge",
                 "points": [[1234567890, 1.5]],
                 "tags": ["node:test"],
@@ -92,7 +92,7 @@ class TestDatadogClient:
         """Test creating a Datadog monitor."""
         result = await client.create_monitor(
             name="Test Monitor",
-            query="avg(last_5m):avg:vertiguard.test{*} > 0.5",
+            query="avg(last_5m):avg:detra.test{*} > 0.5",
             message="Test alert",
             monitor_type="metric alert",
             tags=["test:true"],
@@ -116,7 +116,7 @@ class TestDatadogClient:
     async def test_submit_service_check(self, client):
         """Test submitting a service check."""
         result = await client.submit_service_check(
-            check="vertiguard.test.health",
+            check="detra.test.health",
             status=0,  # OK
             message="Service is healthy",
         )
@@ -126,7 +126,7 @@ class TestDatadogClient:
     async def test_submit_service_check_warning(self, client):
         """Test submitting a warning service check."""
         result = await client.submit_service_check(
-            check="vertiguard.test.health",
+            check="detra.test.health",
             status=1,  # Warning
             message="Service is degraded",
         )
@@ -149,14 +149,14 @@ class TestLLMObsBridge:
     """Tests for LLMObsBridge."""
 
     @pytest.fixture
-    def config(self, sample_vertiguard_config):
-        """Get VertiGuard config for testing."""
-        return sample_vertiguard_config
+    def config(self, sample_detra_config):
+        """Get detra config for testing."""
+        return sample_detra_config
 
     @pytest.fixture
     def bridge(self, config):
         """Create an LLMObsBridge with mocked LLMObs."""
-        with patch("vertiguard.telemetry.llmobs_bridge.LLMObs") as mock_llmobs:
+        with patch("detra.telemetry.llmobs_bridge.LLMObs") as mock_llmobs:
             mock_llmobs.enable = MagicMock()
             mock_llmobs.disable = MagicMock()
             mock_llmobs.flush = MagicMock()
@@ -234,12 +234,12 @@ class TestDatadogClientErrorHandling:
     @pytest.fixture
     def failing_client(self, sample_datadog_config):
         """Create a client that simulates API failures."""
-        with patch("vertiguard.telemetry.datadog_client.MetricsApi") as mock_metrics:
-            with patch("vertiguard.telemetry.datadog_client.EventsApi") as mock_events:
-                with patch("vertiguard.telemetry.datadog_client.MonitorsApi"):
-                    with patch("vertiguard.telemetry.datadog_client.DashboardsApi"):
-                        with patch("vertiguard.telemetry.datadog_client.IncidentsApi"):
-                            with patch("vertiguard.telemetry.datadog_client.ServiceChecksApi"):
+        with patch("detra.telemetry.datadog_client.MetricsApi") as mock_metrics:
+            with patch("detra.telemetry.datadog_client.EventsApi") as mock_events:
+                with patch("detra.telemetry.datadog_client.MonitorsApi"):
+                    with patch("detra.telemetry.datadog_client.DashboardsApi"):
+                        with patch("detra.telemetry.datadog_client.IncidentsApi"):
+                            with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
 
                                 # Setup to raise errors
@@ -279,12 +279,12 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_client_with_empty_tags(self, sample_datadog_config):
         """Test submitting data with empty tags."""
-        with patch("vertiguard.telemetry.datadog_client.MetricsApi") as mock_api:
-            with patch("vertiguard.telemetry.datadog_client.EventsApi"):
-                with patch("vertiguard.telemetry.datadog_client.MonitorsApi"):
-                    with patch("vertiguard.telemetry.datadog_client.DashboardsApi"):
-                        with patch("vertiguard.telemetry.datadog_client.IncidentsApi"):
-                            with patch("vertiguard.telemetry.datadog_client.ServiceChecksApi"):
+        with patch("detra.telemetry.datadog_client.MetricsApi") as mock_api:
+            with patch("detra.telemetry.datadog_client.EventsApi"):
+                with patch("detra.telemetry.datadog_client.MonitorsApi"):
+                    with patch("detra.telemetry.datadog_client.DashboardsApi"):
+                        with patch("detra.telemetry.datadog_client.IncidentsApi"):
+                            with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
@@ -298,12 +298,12 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_client_with_special_characters_in_tags(self, sample_datadog_config):
         """Test tags with special characters."""
-        with patch("vertiguard.telemetry.datadog_client.MetricsApi") as mock_api:
-            with patch("vertiguard.telemetry.datadog_client.EventsApi"):
-                with patch("vertiguard.telemetry.datadog_client.MonitorsApi"):
-                    with patch("vertiguard.telemetry.datadog_client.DashboardsApi"):
-                        with patch("vertiguard.telemetry.datadog_client.IncidentsApi"):
-                            with patch("vertiguard.telemetry.datadog_client.ServiceChecksApi"):
+        with patch("detra.telemetry.datadog_client.MetricsApi") as mock_api:
+            with patch("detra.telemetry.datadog_client.EventsApi"):
+                with patch("detra.telemetry.datadog_client.MonitorsApi"):
+                    with patch("detra.telemetry.datadog_client.DashboardsApi"):
+                        with patch("detra.telemetry.datadog_client.IncidentsApi"):
+                            with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
@@ -322,12 +322,12 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_large_metrics_batch(self, sample_datadog_config):
         """Test submitting a large batch of metrics."""
-        with patch("vertiguard.telemetry.datadog_client.MetricsApi"):
-            with patch("vertiguard.telemetry.datadog_client.EventsApi"):
-                with patch("vertiguard.telemetry.datadog_client.MonitorsApi"):
-                    with patch("vertiguard.telemetry.datadog_client.DashboardsApi"):
-                        with patch("vertiguard.telemetry.datadog_client.IncidentsApi"):
-                            with patch("vertiguard.telemetry.datadog_client.ServiceChecksApi"):
+        with patch("detra.telemetry.datadog_client.MetricsApi"):
+            with patch("detra.telemetry.datadog_client.EventsApi"):
+                with patch("detra.telemetry.datadog_client.MonitorsApi"):
+                    with patch("detra.telemetry.datadog_client.DashboardsApi"):
+                        with patch("detra.telemetry.datadog_client.IncidentsApi"):
+                            with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
@@ -347,10 +347,10 @@ class TestEdgeCases:
                                 result = await client.submit_metrics(metrics)
                                 # Should handle large batches
 
-    def test_bridge_multiple_enable_disable_cycles(self, sample_vertiguard_config):
+    def test_bridge_multiple_enable_disable_cycles(self, sample_detra_config):
         """Test enabling and disabling multiple times."""
-        with patch("vertiguard.telemetry.llmobs_bridge.LLMObs") as mock_llmobs:
-            bridge = LLMObsBridge(sample_vertiguard_config)
+        with patch("detra.telemetry.llmobs_bridge.LLMObs") as mock_llmobs:
+            bridge = LLMObsBridge(sample_detra_config)
             bridge._llmobs = mock_llmobs
 
             # Multiple enable/disable cycles

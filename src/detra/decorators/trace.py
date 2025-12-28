@@ -1,4 +1,4 @@
-"""VertiGuard trace decorators for LLM observability."""
+"""detra trace decorators for LLM observability."""
 
 import asyncio
 import functools
@@ -35,7 +35,7 @@ def set_datadog_client(client: DatadogClient) -> None:
     _datadog_client = client
 
 
-class VertiGuardTrace:
+class detraTrace:
     """
     Decorator that wraps functions with:
     - Datadog LLM Observability tracing
@@ -179,9 +179,15 @@ class VertiGuardTrace:
                 output_data=output_data,
             )
 
+            # Export span to get span_id and trace_id
+            span_dict = LLMObs.export_span(span=span)
+            if not span_dict:
+                logger.warning("Failed to export span for evaluation", node=self.node_name)
+                return eval_result
+
             # Submit evaluation to LLMObs
             LLMObs.submit_evaluation(
-                span=span,
+                span=span_dict,
                 label="adherence_score",
                 metric_type="score",
                 value=eval_result.score,
@@ -189,7 +195,7 @@ class VertiGuardTrace:
 
             if eval_result.flagged:
                 LLMObs.submit_evaluation(
-                    span=span,
+                    span=span_dict,
                     label="flag_category",
                     metric_type="categorical",
                     value=eval_result.flag_category or "unknown",
@@ -202,7 +208,7 @@ class VertiGuardTrace:
             for issue in eval_result.security_issues:
                 if issue.get("detected"):
                     LLMObs.submit_evaluation(
-                        span=span,
+                        span=span_dict,
                         label=f"security_{issue['check']}",
                         metric_type="categorical",
                         value=issue.get("severity", "unknown"),
@@ -229,13 +235,13 @@ class VertiGuardTrace:
 
         metrics = [
             {
-                "metric": "vertiguard.node.latency",
+                "metric": "detra.node.latency",
                 "type": "distribution",
                 "points": [[ts, latency_ms]],
                 "tags": base_tags,
             },
             {
-                "metric": "vertiguard.node.calls",
+                "metric": "detra.node.calls",
                 "type": "count",
                 "points": [[ts, 1]],
                 "tags": base_tags + [f"status:{'error' if error else 'success'}"],
@@ -245,13 +251,13 @@ class VertiGuardTrace:
         if eval_result:
             metrics.extend([
                 {
-                    "metric": "vertiguard.node.adherence_score",
+                    "metric": "detra.node.adherence_score",
                     "type": "gauge",
                     "points": [[ts, eval_result.score]],
                     "tags": base_tags,
                 },
                 {
-                    "metric": "vertiguard.node.flagged",
+                    "metric": "detra.node.flagged",
                     "type": "count",
                     "points": [[ts, 1 if eval_result.flagged else 0]],
                     "tags": base_tags + (
@@ -260,13 +266,13 @@ class VertiGuardTrace:
                     ),
                 },
                 {
-                    "metric": "vertiguard.evaluation.latency",
+                    "metric": "detra.evaluation.latency",
                     "type": "distribution",
                     "points": [[ts, eval_result.latency_ms]],
                     "tags": base_tags,
                 },
                 {
-                    "metric": "vertiguard.evaluation.tokens",
+                    "metric": "detra.evaluation.tokens",
                     "type": "count",
                     "points": [[ts, eval_result.eval_tokens_used]],
                     "tags": base_tags,
@@ -277,7 +283,7 @@ class VertiGuardTrace:
             for issue in eval_result.security_issues:
                 if issue.get("detected"):
                     metrics.append({
-                        "metric": "vertiguard.security.issues",
+                        "metric": "detra.security.issues",
                         "type": "count",
                         "points": [[ts, 1]],
                         "tags": base_tags + [
@@ -321,7 +327,7 @@ class VertiGuardTrace:
 """
 
         await _datadog_client.submit_event(
-            title=f"VertiGuard Flag: {self.node_name}",
+            title=f"detra Flag: {self.node_name}",
             text=text,
             alert_type="warning" if eval_result.score > 0.5 else "error",
             tags=[
@@ -329,7 +335,7 @@ class VertiGuardTrace:
                 f"category:{eval_result.flag_category}",
                 f"score:{eval_result.score:.2f}",
             ],
-            aggregation_key=f"vertiguard-flag-{self.node_name}",
+            aggregation_key=f"detra-flag-{self.node_name}",
         )
 
     async def _submit_error_event(
@@ -340,11 +346,11 @@ class VertiGuardTrace:
             return
 
         await _datadog_client.submit_event(
-            title=f"VertiGuard Error: {self.node_name}",
+            title=f"detra Error: {self.node_name}",
             text=f"```\n{str(error)}\n```\n\nInput: {str(input_data)[:300]}",
             alert_type="error",
             tags=[f"node:{self.node_name}", f"error_type:{type(error).__name__}"],
-            aggregation_key=f"vertiguard-error-{self.node_name}",
+            aggregation_key=f"detra-error-{self.node_name}",
         )
 
     def _format_failed_checks(self, checks: list) -> str:
@@ -370,26 +376,26 @@ class VertiGuardTrace:
 
 
 # Convenience functions
-def trace(node_name: str, **kwargs) -> VertiGuardTrace:
+def trace(node_name: str, **kwargs) -> detraTrace:
     """Create a trace decorator."""
-    return VertiGuardTrace(node_name, span_kind="workflow", **kwargs)
+    return detraTrace(node_name, span_kind="workflow", **kwargs)
 
 
-def workflow(node_name: str, **kwargs) -> VertiGuardTrace:
+def workflow(node_name: str, **kwargs) -> detraTrace:
     """Create a workflow trace decorator."""
-    return VertiGuardTrace(node_name, span_kind="workflow", **kwargs)
+    return detraTrace(node_name, span_kind="workflow", **kwargs)
 
 
-def llm(node_name: str, **kwargs) -> VertiGuardTrace:
+def llm(node_name: str, **kwargs) -> detraTrace:
     """Create an LLM trace decorator."""
-    return VertiGuardTrace(node_name, span_kind="llm", **kwargs)
+    return detraTrace(node_name, span_kind="llm", **kwargs)
 
 
-def task(node_name: str, **kwargs) -> VertiGuardTrace:
+def task(node_name: str, **kwargs) -> detraTrace:
     """Create a task trace decorator."""
-    return VertiGuardTrace(node_name, span_kind="task", **kwargs)
+    return detraTrace(node_name, span_kind="task", **kwargs)
 
 
-def agent(node_name: str, **kwargs) -> VertiGuardTrace:
+def agent(node_name: str, **kwargs) -> detraTrace:
     """Create an agent trace decorator."""
-    return VertiGuardTrace(node_name, span_kind="agent", **kwargs)
+    return detraTrace(node_name, span_kind="agent", **kwargs)

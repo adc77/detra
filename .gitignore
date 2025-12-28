@@ -64,6 +64,5 @@ Thumbs.db
 !tsconfig.json
 
 # Local config overrides
-vertiguard.local.yaml
-
+detra.local.yaml
 docs/

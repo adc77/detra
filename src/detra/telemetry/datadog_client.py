@@ -1,11 +1,19 @@
 """Unified Datadog API client for all telemetry operations."""
 
 import asyncio
+import os
+import ssl
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
 import structlog
 from datadog_api_client import ApiClient, Configuration
+
+try:
+    import certifi
+    CERTIFI_AVAILABLE = True
+except ImportError:
+    CERTIFI_AVAILABLE = False
 from datadog_api_client.v1.api.dashboards_api import DashboardsApi
 from datadog_api_client.v1.api.events_api import EventsApi
 from datadog_api_client.v1.api.monitors_api import MonitorsApi
@@ -52,12 +60,62 @@ class DatadogClient:
         self.configuration.api_key["appKeyAuth"] = config.app_key
         self.configuration.server_variables["site"] = config.site
 
+        # Configure SSL
+        self._configure_ssl()
+
         # Enable retry for resilience
         self.configuration.enable_retry = True
         self.configuration.max_retries = 3
 
         self._base_tags = self._build_base_tags()
         self._executor = ThreadPoolExecutor(max_workers=4)
+
+    def _configure_ssl(self) -> None:
+        """Configure SSL certificate verification."""
+        import urllib3
+        
+        if not self.config.verify_ssl:
+            # Disable SSL verification (development only)
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            # Configure urllib3 to not verify SSL
+            urllib3.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
+            try:
+                import urllib3.contrib.pyopenssl
+                urllib3.contrib.pyopenssl.inject_into_urllib3()
+            except ImportError:
+                pass
+            # Set verify=False for ApiClient (if supported)
+            if hasattr(self.configuration, 'verify_ssl'):
+                self.configuration.verify_ssl = False
+            logger.warning("SSL verification disabled - not recommended for production")
+        elif CERTIFI_AVAILABLE:
+            # Use certifi certificate bundle
+            # Configure urllib3 to use certifi
+            try:
+                # Set SSL certificate path for urllib3
+                if hasattr(self.configuration, 'ssl_ca_cert'):
+                    self.configuration.ssl_ca_cert = certifi.where()
+                # Also set environment variable for urllib3
+                os.environ.setdefault('REQUESTS_CA_BUNDLE', certifi.where())
+                os.environ.setdefault('CURL_CA_BUNDLE', certifi.where())
+                logger.debug("Using certifi certificate bundle", path=certifi.where())
+            except Exception as e:
+                logger.warning("Failed to configure certifi", error=str(e))
+        elif self.config.ssl_cert_path:
+            # Use custom certificate path
+            try:
+                if hasattr(self.configuration, 'ssl_ca_cert'):
+                    self.configuration.ssl_ca_cert = self.config.ssl_cert_path
+                os.environ.setdefault('REQUESTS_CA_BUNDLE', self.config.ssl_cert_path)
+                os.environ.setdefault('CURL_CA_BUNDLE', self.config.ssl_cert_path)
+                logger.debug("Using custom SSL certificate path", path=self.config.ssl_cert_path)
+            except Exception as e:
+                logger.warning("Failed to configure custom SSL certificate", error=str(e))
+        else:
+            # Use system default (may fail on macOS)
+            logger.warning(
+                "No SSL certificate bundle specified. Install 'certifi' package for better compatibility."
+            )
 
     def _build_base_tags(self) -> list[str]:
         """Build base tags for all submissions."""
@@ -185,7 +243,7 @@ class DatadogClient:
         priority: str = "normal",
         tags: Optional[list[str]] = None,
         aggregation_key: Optional[str] = None,
-        source_type_name: str = "vertiguard",
+        source_type_name: str = "detra",
     ) -> Optional[dict]:
         """
         Submit an event to Datadog.
@@ -304,8 +362,8 @@ class DatadogClient:
             api = MonitorsApi(api_client)
 
             options = {"thresholds": thresholds or {"critical": 1}}
-            if priority:
-                options["priority"] = priority
+            # Note: priority is not a valid monitor option in Datadog API
+            # Removed to avoid API errors
 
             body = Monitor(
                 name=name,
@@ -470,7 +528,7 @@ class DatadogClient:
             body = [
                 ServiceCheck(
                     check=check,
-                    host_name="vertiguard",
+                    host_name="detra",
                     status=ServiceCheckStatus(status),
                     message=message,
                     tags=self._base_tags + (tags or []),

@@ -6,29 +6,29 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from vertiguard.config.schema import NodeConfig, SecurityConfig
-from vertiguard.evaluation.prompts import (
+from detra.config.schema import NodeConfig, SecurityConfig
+from detra.evaluation.prompts import (
     BEHAVIOR_CHECK_PROMPT,
     BATCH_BEHAVIOR_CHECK_PROMPT,
     ROOT_CAUSE_CLASSIFICATION_PROMPT,
     SECURITY_CHECK_PROMPT,
 )
-from vertiguard.evaluation.rules import (
+from detra.evaluation.rules import (
     RuleBasedChecker,
     RuleEvaluationResult,
     RuleCheckResult,
 )
-from vertiguard.evaluation.classifiers import (
+from detra.evaluation.classifiers import (
     FailureClassifier,
     FailureCategory,
     ClassificationResult,
 )
-from vertiguard.evaluation.gemini_judge import (
+from detra.evaluation.gemini_judge import (
     GeminiJudge,
     EvaluationResult,
     BehaviorCheckResult,
 )
-from vertiguard.evaluation.engine import EvaluationEngine
+from detra.evaluation.engine import EvaluationEngine
 
 
 class TestPrompts:

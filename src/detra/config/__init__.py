@@ -1,8 +1,8 @@
-"""Configuration management for VertiGuard."""
+"""Configuration management for detra."""
 
 from detra.config.schema import (
-    VertiGuardConfig,
-    VertiGuardSettings,
+    detraConfig,
+    detraSettings,
     DatadogConfig,
     GeminiConfig,
     NodeConfig,
@@ -22,8 +22,8 @@ from detra.config.loader import (
 from detra.config.defaults import DEFAULT_THRESHOLDS, DEFAULT_SECURITY_CONFIG
 
 __all__ = [
-    "VertiGuardConfig",
-    "VertiGuardSettings",
+    "detraConfig",
+    "detraSettings",
     "DatadogConfig",
     "GeminiConfig",
     "NodeConfig",

@@ -152,13 +152,13 @@ class NotificationManager:
             "attachments": [
                 {
                     "color": color,
-                    "title": f"VertiGuard Flag: {node_name}",
+                    "title": f"detra Flag: {node_name}",
                     "fields": [
                         {"title": "Score", "value": f"{score:.2f}", "short": True},
                         {"title": "Category", "value": category, "short": True},
                         {"title": "Reason", "value": reason, "short": False},
                     ],
-                    "footer": "VertiGuard LLM Observability",
+                    "footer": "detra LLM Observability",
                     "ts": int(time.time()),
                 }
             ],
@@ -197,7 +197,7 @@ class NotificationManager:
                         {"title": "Incident ID", "value": incident_id, "short": True},
                         {"title": "Severity", "value": severity, "short": True},
                     ],
-                    "footer": "VertiGuard LLM Observability",
+                    "footer": "detra LLM Observability",
                 }
             ],
         }
@@ -228,7 +228,7 @@ class NotificationManager:
                         {"title": "Severity", "value": severity, "short": True},
                         {"title": "Details", "value": details, "short": False},
                     ],
-                    "footer": "VertiGuard Security",
+                    "footer": "detra Security",
                     "ts": int(time.time()),
                 }
             ],
@@ -266,11 +266,11 @@ class NotificationManager:
         payload = {
             "routing_key": self.config.pagerduty.integration_key,
             "event_action": "trigger",
-            "dedup_key": f"vertiguard-{node_name}-{category}",
+            "dedup_key": f"detra-{node_name}-{category}",
             "payload": {
-                "summary": f"VertiGuard: {node_name} flagged - {reason}",
+                "summary": f"detra: {node_name} flagged - {reason}",
                 "severity": pd_severity,
-                "source": "vertiguard",
+                "source": "detra",
                 "component": node_name,
                 "custom_details": {
                     "score": score,
@@ -309,9 +309,9 @@ class NotificationManager:
             "routing_key": self.config.pagerduty.integration_key,
             "event_action": "trigger",
             "payload": {
-                "summary": f"VertiGuard Incident: {title}",
+                "summary": f"detra Incident: {title}",
                 "severity": pd_severity,
-                "source": "vertiguard",
+                "source": "detra",
                 "custom_details": details or {},
             },
         }
@@ -390,7 +390,7 @@ class NotificationManager:
                 {
                     "color": severity_colors.get(severity.lower(), "#808080"),
                     "text": message,
-                    "footer": "VertiGuard",
+                    "footer": "detra",
                     "ts": int(time.time()),
                 }
             ]
@@ -434,7 +434,7 @@ class NotificationManager:
             "payload": {
                 "summary": title,
                 "severity": pd_severity,
-                "source": "vertiguard",
+                "source": "detra",
                 "custom_details": {
                     "description": description,
                 },

@@ -1,7 +1,7 @@
-"""Trace decorators for VertiGuard."""
+"""Trace decorators for detra."""
 
 from detra.decorators.trace import (
-    VertiGuardTrace,
+    detraTrace,
     trace,
     workflow,
     llm,
@@ -12,7 +12,7 @@ from detra.decorators.trace import (
 )
 
 __all__ = [
-    "VertiGuardTrace",
+    "detraTrace",
     "trace",
     "workflow",
     "llm",

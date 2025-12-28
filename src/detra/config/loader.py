@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 from detra.config.schema import (
     NodeConfig,
-    VertiGuardConfig,
-    VertiGuardSettings,
+    detraConfig,
+    detraSettings,
 )
 
 
@@ -83,18 +83,18 @@ def _deep_merge(base: dict, override: dict) -> dict:
 def load_config(
     config_path: Optional[str] = None,
     env_file: Optional[str] = None,
-) -> VertiGuardConfig:
+) -> detraConfig:
     """
     Load configuration from YAML file and environment variables.
 
     Environment variables take precedence over file values.
 
     Args:
-        config_path: Path to vertiguard.yaml config file.
+        config_path: Path to detra.yaml config file.
         env_file: Path to .env file (optional).
 
     Returns:
-        Validated VertiGuardConfig instance.
+        Validated detraConfig instance.
     """
     # Load .env file
     if env_file:
@@ -103,12 +103,12 @@ def load_config(
         load_dotenv()
 
     # Load environment settings
-    settings = VertiGuardSettings()
+    settings = detraSettings()
 
     # Start with defaults from environment
     config_data: dict[str, Any] = {
-        "app_name": settings.vertiguard_app_name,
-        "environment": settings.vertiguard_env,
+        "app_name": settings.detra_app_name,
+        "environment": settings.detra_env,
         "datadog": {
             "api_key": settings.dd_api_key or "",
             "app_key": settings.dd_app_key or "",
@@ -118,7 +118,7 @@ def load_config(
             "api_key": settings.google_api_key,
             "project_id": settings.google_cloud_project,
             "location": settings.google_cloud_location,
-            "model": settings.vertiguard_eval_model,
+            "model": settings.detra_eval_model,
         },
         "integrations": {
             "slack": {
@@ -142,19 +142,19 @@ def load_config(
     if settings.google_api_key:
         config_data["gemini"]["api_key"] = settings.google_api_key
 
-    return VertiGuardConfig(**config_data)
+    return detraConfig(**config_data)
 
 
 # Global config singleton
-_config: Optional[VertiGuardConfig] = None
+_config: Optional[detraConfig] = None
 
 
-def get_config() -> VertiGuardConfig:
+def get_config() -> detraConfig:
     """
     Get the global configuration.
 
     Returns:
-        The current VertiGuardConfig instance.
+        The current detraConfig instance.
 
     Raises:
         RuntimeError: If configuration hasn't been loaded.
@@ -165,12 +165,12 @@ def get_config() -> VertiGuardConfig:
     return _config
 
 
-def set_config(config: VertiGuardConfig) -> None:
+def set_config(config: detraConfig) -> None:
     """
     Set the global configuration.
 
     Args:
-        config: VertiGuardConfig instance to set as global.
+        config: detraConfig instance to set as global.
     """
     global _config
     _config = config

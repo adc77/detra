@@ -1,31 +1,38 @@
 """Bridge to Datadog LLM Observability."""
 
 import os
+import ssl
 from contextlib import contextmanager
 from typing import Any, Optional
 
 import structlog
 from ddtrace.llmobs import LLMObs
 
-from detra.config.schema import VertiGuardConfig
+from detra.config.schema import detraConfig
+
+try:
+    import certifi
+    CERTIFI_AVAILABLE = True
+except ImportError:
+    CERTIFI_AVAILABLE = False
 
 logger = structlog.get_logger()
 
 
 class LLMObsBridge:
     """
-    Wrapper around ddtrace LLMObs for VertiGuard integration.
+    Wrapper around ddtrace LLMObs for detra integration.
 
     Provides a clean interface for LLM Observability operations
     including span management, annotations, and evaluations.
     """
 
-    def __init__(self, config: VertiGuardConfig):
+    def __init__(self, config: detraConfig):
         """
         Initialize the LLMObs bridge.
 
         Args:
-            config: VertiGuard configuration.
+            config: detra configuration.
         """
         self.config = config
         self._enabled = False
@@ -36,12 +43,18 @@ class LLMObsBridge:
             return
 
         try:
+            # Configure SSL for ddtrace
+            self._configure_ssl()
+
             # Set environment variables for ddtrace
             os.environ.setdefault("DD_API_KEY", self.config.datadog.api_key)
             os.environ.setdefault("DD_SITE", self.config.datadog.site)
             os.environ.setdefault("DD_LLMOBS_ENABLED", "1")
             os.environ.setdefault("DD_LLMOBS_ML_APP", self.config.app_name)
             os.environ.setdefault("DD_LLMOBS_AGENTLESS_ENABLED", "1")
+            # Disable local agent for regular traces (we're using agentless mode)
+            os.environ.setdefault("DD_TRACE_AGENT_URL", "")
+            os.environ.setdefault("DD_AGENT_HOST", "")
 
             if self.config.datadog.env:
                 os.environ.setdefault("DD_ENV", self.config.datadog.env)
@@ -70,6 +83,39 @@ class LLMObsBridge:
         except Exception as e:
             logger.error("Failed to enable LLM Observability", error=str(e))
             raise
+
+    def _configure_ssl(self) -> None:
+        """Configure SSL context for ddtrace HTTP connections."""
+        if not self.config.datadog.verify_ssl:
+            # Disable SSL verification (development only)
+            # Note: ddtrace doesn't directly support this,
+            # but we can set a default unverified context
+            ssl._create_default_https_context = ssl._create_unverified_context
+            logger.warning("SSL verification disabled for ddtrace - not recommended for production")
+        elif CERTIFI_AVAILABLE:
+            # Configure default SSL context to use certifi certificates
+            try:
+                cert_path = certifi.where()
+                def create_context():
+                    return ssl.create_default_context(cafile=cert_path)
+                ssl._create_default_https_context = create_context
+                logger.debug("Configured SSL context with certifi", path=cert_path)
+            except Exception as e:
+                logger.warning("Failed to configure SSL context with certifi", error=str(e))
+        elif self.config.datadog.ssl_cert_path:
+            # Use custom certificate path
+            try:
+                cert_path = self.config.datadog.ssl_cert_path
+                def create_context():
+                    return ssl.create_default_context(cafile=cert_path)
+                ssl._create_default_https_context = create_context
+                logger.debug("Configured SSL context with custom certificate", path=cert_path)
+            except Exception as e:
+                logger.warning("Failed to configure SSL context with custom certificate", error=str(e))
+        else:
+            logger.warning(
+                "No SSL certificate bundle specified for ddtrace. Install 'certifi' package for better compatibility."
+            )
 
     def disable(self) -> None:
         """Disable and flush LLM Observability."""

@@ -1,4 +1,4 @@
-"""Main VertiGuard client."""
+"""Main detra client."""
 
 import atexit
 from typing import Any, Optional
@@ -9,7 +9,7 @@ from detra.actions.incidents import IncidentManager
 from detra.actions.notifications import NotificationManager
 from detra.agents.monitor import AgentMonitor
 from detra.config.loader import get_config, load_config, set_config
-from detra.config.schema import VertiGuardConfig
+from detra.config.schema import detraConfig
 from detra.dashboard.templates import get_dashboard_definition
 from detra.dashboard.comprehensive_template import get_comprehensive_dashboard
 from detra.decorators.trace import (
@@ -31,29 +31,29 @@ from detra.telemetry.llmobs_bridge import LLMObsBridge
 logger = structlog.get_logger()
 
 # Global client instance
-_client: Optional["VertiGuard"] = None
+_client: Optional["detra"] = None
 
 
-class VertiGuard:
+class detra:
     """
-    Main VertiGuard client for LLM observability.
+    Main detra client for LLM observability.
 
     Usage:
         import detra
 
-        vg = vertiguard.init("vertiguard.yaml")
+        vg = detra.init("detra.yaml")
 
         @vg.trace("extract_entities")
         def extract_entities(doc):
             return llm.complete(prompt)
     """
 
-    def __init__(self, config: VertiGuardConfig):
+    def __init__(self, config: detraConfig):
         """
-        Initialize the VertiGuard client.
+        Initialize the detra client.
 
         Args:
-            config: VertiGuard configuration.
+            config: detra configuration.
         """
         self.config = config
         set_config(config)
@@ -92,7 +92,7 @@ class VertiGuard:
         atexit.register(self._cleanup)
 
         logger.info(
-            "VertiGuard initialized",
+            "detra initialized",
             app_name=config.app_name,
             env=config.environment.value,
             nodes=list(config.nodes.keys()),
@@ -167,7 +167,7 @@ class VertiGuard:
 
     async def setup_dashboard(self, comprehensive: bool = True) -> Optional[dict]:
         """
-        Create the VertiGuard dashboard.
+        Create the detra dashboard.
 
         Args:
             comprehensive: Use comprehensive 32-widget template (default: True).
@@ -278,7 +278,7 @@ class VertiGuard:
             True if successful.
         """
         return await self.datadog_client.submit_service_check(
-            check=f"vertiguard.{self.config.app_name}.health",
+            check=f"detra.{self.config.app_name}.health",
             status=status,
             message=message,
         )
@@ -299,17 +299,17 @@ def init(
     config_path: Optional[str] = None,
     env_file: Optional[str] = None,
     **kwargs,
-) -> VertiGuard:
+) -> detra:
     """
-    Initialize VertiGuard with configuration.
+    Initialize detra with configuration.
 
     Args:
-        config_path: Path to vertiguard.yaml config file.
+        config_path: Path to detra.yaml config file.
         env_file: Path to .env file (optional).
         **kwargs: Override config values.
 
     Returns:
-        Initialized VertiGuard client.
+        Initialized detra client.
     """
     global _client
 
@@ -320,26 +320,26 @@ def init(
         if hasattr(config, key):
             setattr(config, key, value)
 
-    _client = VertiGuard(config)
+    _client = detra(config)
     return _client
 
 
-def get_client() -> VertiGuard:
+def get_client() -> detra:
     """
-    Get the global VertiGuard client.
+    Get the global detra client.
 
     Returns:
-        The current VertiGuard client.
+        The current detra client.
 
     Raises:
         RuntimeError: If client hasn't been initialized.
     """
     global _client
     if _client is None:
-        raise RuntimeError("VertiGuard not initialized. Call vertiguard.init() first.")
+        raise RuntimeError("detra not initialized. Call detra.init() first.")
     return _client
 
 
 def is_initialized() -> bool:
-    """Check if VertiGuard has been initialized."""
+    """Check if detra has been initialized."""
     return _client is not None

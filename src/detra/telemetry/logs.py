@@ -13,7 +13,7 @@ def configure_logging(
     add_timestamps: bool = True,
 ) -> None:
     """
-    Configure structured logging for VertiGuard.
+    Configure structured logging for detra.
 
     Args:
         level: Log level (DEBUG, INFO, WARNING, ERROR).
@@ -62,10 +62,10 @@ def configure_logging(
 
 class StructuredLogger:
     """
-    VertiGuard-specific structured logger with context management.
+    detra-specific structured logger with context management.
 
     Provides methods for logging with consistent context across
-    all VertiGuard operations.
+    all detra operations.
     """
 
     def __init__(self, name: str, app_name: Optional[str] = None):
@@ -116,7 +116,7 @@ class StructuredLogger:
             New logger with bound context.
         """
         new_logger = StructuredLogger(
-            name=self._logger._logger.name if hasattr(self._logger, '_logger') else "vertiguard",
+            name=self._logger._logger.name if hasattr(self._logger, '_logger') else "detra",
             app_name=self._app_name,
         )
         new_logger._logger = self._logger.bind(**kwargs)
@@ -154,9 +154,9 @@ class StructuredLogger:
         return self.bind(**ctx)
 
 
-def get_logger(name: str = "vertiguard", app_name: Optional[str] = None) -> StructuredLogger:
+def get_logger(name: str = "detra", app_name: Optional[str] = None) -> StructuredLogger:
     """
-    Get a VertiGuard structured logger.
+    Get a detra structured logger.
 
     Args:
         name: Logger name.

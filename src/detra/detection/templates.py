@@ -5,9 +5,9 @@ from typing import Any, Optional
 # Pre-defined monitor templates
 MONITOR_TEMPLATES: dict[str, dict[str, Any]] = {
     "adherence_warning": {
-        "name": "VertiGuard: Low Adherence Score Warning",
+        "name": "detra: Low Adherence Score Warning",
         "type": "metric alert",
-        "query": "avg(last_5m):avg:vertiguard.node.adherence_score{{*}} < {threshold}",
+        "query": "avg(last_5m):avg:detra.node.adherence_score{{*}} < {threshold}",
         "message": """## Low Adherence Score Detected
 
 The LLM output adherence score has dropped below the warning threshold.
@@ -27,9 +27,9 @@ The LLM output adherence score has dropped below the warning threshold.
         "priority": 3,
     },
     "adherence_critical": {
-        "name": "VertiGuard: Critical Adherence Score",
+        "name": "detra: Critical Adherence Score",
         "type": "metric alert",
-        "query": "avg(last_5m):avg:vertiguard.node.adherence_score{{*}} < {threshold}",
+        "query": "avg(last_5m):avg:detra.node.adherence_score{{*}} < {threshold}",
         "message": """## Critical Adherence Score Alert
 
 The LLM output adherence score has dropped to critical levels.
@@ -48,9 +48,9 @@ The LLM output adherence score has dropped to critical levels.
         "priority": 1,
     },
     "flag_rate": {
-        "name": "VertiGuard: High Flag Rate",
+        "name": "detra: High Flag Rate",
         "type": "metric alert",
-        "query": "sum(last_5m):sum:vertiguard.node.flagged{{*}}.as_count() / sum:vertiguard.node.calls{{*}}.as_count() > {threshold}",
+        "query": "sum(last_5m):sum:detra.node.flagged{{*}}.as_count() / sum:detra.node.calls{{*}}.as_count() > {threshold}",
         "message": """## High Flag Rate Detected
 
 More than {threshold_pct}% of LLM calls are being flagged.
@@ -68,9 +68,9 @@ More than {threshold_pct}% of LLM calls are being flagged.
         "priority": 2,
     },
     "latency_warning": {
-        "name": "VertiGuard: High Latency Warning",
+        "name": "detra: High Latency Warning",
         "type": "metric alert",
-        "query": "avg(last_5m):avg:vertiguard.node.latency{{*}} > {threshold}",
+        "query": "avg(last_5m):avg:detra.node.latency{{*}} > {threshold}",
         "message": """## High Latency Detected
 
 LLM call latency has exceeded warning threshold.
@@ -89,9 +89,9 @@ LLM call latency has exceeded warning threshold.
         "priority": 3,
     },
     "latency_critical": {
-        "name": "VertiGuard: Critical Latency",
+        "name": "detra: Critical Latency",
         "type": "metric alert",
-        "query": "avg(last_5m):avg:vertiguard.node.latency{{*}} > {threshold}",
+        "query": "avg(last_5m):avg:detra.node.latency{{*}} > {threshold}",
         "message": """## Critical Latency Alert
 
 LLM call latency has exceeded critical threshold.
@@ -110,9 +110,9 @@ LLM call latency has exceeded critical threshold.
         "priority": 1,
     },
     "error_rate": {
-        "name": "VertiGuard: High Error Rate",
+        "name": "detra: High Error Rate",
         "type": "metric alert",
-        "query": "sum(last_5m):sum:vertiguard.node.calls{{status:error}}.as_count() / sum:vertiguard.node.calls{{*}}.as_count() > {threshold}",
+        "query": "sum(last_5m):sum:detra.node.calls{{status:error}}.as_count() / sum:detra.node.calls{{*}}.as_count() > {threshold}",
         "message": """## High Error Rate Detected
 
 LLM call error rate has exceeded threshold.
@@ -131,9 +131,9 @@ LLM call error rate has exceeded threshold.
         "priority": 2,
     },
     "security_issues": {
-        "name": "VertiGuard: Security Issues Detected",
+        "name": "detra: Security Issues Detected",
         "type": "metric alert",
-        "query": "sum(last_5m):sum:vertiguard.security.issues{{*}}.as_count() > 0",
+        "query": "sum(last_5m):sum:detra.security.issues{{*}}.as_count() > 0",
         "message": """## Security Issues Detected
 
 Security checks have flagged potential issues.
@@ -153,9 +153,9 @@ Security checks have flagged potential issues.
         "priority": 1,
     },
     "token_usage": {
-        "name": "VertiGuard: High Token Usage",
+        "name": "detra: High Token Usage",
         "type": "metric alert",
-        "query": "sum(last_1h):sum:vertiguard.evaluation.tokens{{*}}.as_count() > {threshold}",
+        "query": "sum(last_1h):sum:detra.evaluation.tokens{{*}}.as_count() > {threshold}",
         "message": """## High Token Usage Alert
 
 Evaluation token usage has exceeded threshold.

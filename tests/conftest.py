@@ -1,4 +1,4 @@
-"""Pytest configuration and fixtures for VertiGuard tests."""
+"""Pytest configuration and fixtures for detra tests."""
 
 import os
 import tempfile
@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import yaml
 
-from vertiguard.config.schema import (
+from detra.config.schema import (
     AlertConfig,
     DatadogConfig,
     Environment,
@@ -18,7 +18,7 @@ from vertiguard.config.schema import (
     SecurityConfig,
     SlackConfig,
     ThresholdsConfig,
-    VertiGuardConfig,
+    detraConfig,
 )
 
 
@@ -62,7 +62,7 @@ def sample_gemini_config() -> GeminiConfig:
     """Create a sample Gemini configuration."""
     return GeminiConfig(
         api_key="test_gemini_key",
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         temperature=0.1,
         max_tokens=1024,
     )
@@ -112,16 +112,16 @@ def sample_integrations_config() -> IntegrationsConfig:
 
 
 @pytest.fixture
-def sample_vertiguard_config(
+def sample_detra_config(
     sample_node_config: NodeConfig,
     sample_datadog_config: DatadogConfig,
     sample_gemini_config: GeminiConfig,
     sample_security_config: SecurityConfig,
     sample_thresholds_config: ThresholdsConfig,
     sample_integrations_config: IntegrationsConfig,
-) -> VertiGuardConfig:
-    """Create a complete sample VertiGuard configuration."""
-    return VertiGuardConfig(
+) -> detraConfig:
+    """Create a complete sample detra configuration."""
+    return detraConfig(
         app_name="test-app",
         version="1.0.0",
         environment=Environment.DEVELOPMENT,
@@ -154,7 +154,7 @@ def sample_config_yaml() -> str:
         },
         "gemini": {
             "api_key": "${GOOGLE_API_KEY}",
-            "model": "gemini-1.5-flash",
+            "model": "gemini-2.5-flash",
             "temperature": 0.1,
             "max_tokens": 1024,
         },

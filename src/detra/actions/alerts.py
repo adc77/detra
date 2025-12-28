@@ -141,7 +141,7 @@ class AlertHandler:
                 f"alert_type:{alert.alert_type.value}",
                 f"severity:{alert.severity.value}",
             ] + (alert.tags or []),
-            aggregation_key=f"vertiguard-alert-{alert.alert_type.value}",
+            aggregation_key=f"detra-alert-{alert.alert_type.value}",
         )
 
     async def _handle_flag_alert(self, alert: Alert) -> None:

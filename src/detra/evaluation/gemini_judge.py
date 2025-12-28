@@ -497,8 +497,8 @@ class GeminiJudge:
             raise RuntimeError("Gemini client not initialized")
 
         config = RetryConfig(
-            max_attempts=3,
-            base_delay=1.0,
+            max_retries=3,
+            initial_delay=1.0,
             retryable_exceptions=(Exception,),
         )
 

@@ -1,8 +1,8 @@
-# VertiGuard
+# detra
 
 End-to-end LLM Observability for Vertical AI Applications with Datadog Integration
 
-VertiGuard is a comprehensive framework for monitoring, evaluating, and securing LLM applications. It provides automatic tracing, evaluation using Gemini, security scanning, alerting, and full integration with Datadog's LLM Observability platform.
+detra is a comprehensive framework for monitoring, evaluating, and securing LLM applications. It provides automatic tracing, evaluation using Gemini, security scanning, alerting, and full integration with Datadog's LLM Observability platform.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ VertiGuard is a comprehensive framework for monitoring, evaluating, and securing
 
 ## Overview
 
-VertiGuard enables production-ready observability for LLM applications by:
+detra enables production-ready observability for LLM applications by:
 
 - **Automatic Tracing**: Decorator-based tracing that captures inputs, outputs, and metadata
 - **LLM Evaluation**: Gemini-powered evaluation to check adherence to expected behaviors
@@ -35,9 +35,9 @@ VertiGuard enables production-ready observability for LLM applications by:
 Apply decorators to your LLM functions to automatically capture traces:
 
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 @vg.trace("extract_entities")
 async def extract_entities(document: str):
@@ -46,7 +46,7 @@ async def extract_entities(document: str):
 
 ### 2. Behavior-Based Evaluation
 
-Define expected and unexpected behaviors in configuration, and VertiGuard automatically evaluates outputs:
+Define expected and unexpected behaviors in configuration, and detra automatically evaluates outputs:
 
 ```yaml
 nodes:
@@ -117,7 +117,7 @@ Configure notifications via:
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd verti-guard
+cd detra
 
 # Install dependencies
 pip install -e .
@@ -161,7 +161,7 @@ export PAGERDUTY_INTEGRATION_KEY=your_pagerduty_key
 
 ### 2. Configuration File
 
-Create a `vertiguard.yaml` configuration file:
+Create a `detra.yaml` configuration file:
 
 ```yaml
 app_name: my-llm-app
@@ -178,7 +178,7 @@ datadog:
 
 gemini:
   api_key: ${GOOGLE_API_KEY}
-  model: gemini-1.5-flash
+  model: gemini-2.5-flash
   temperature: 0.1
   max_tokens: 1024
 
@@ -248,10 +248,10 @@ dashboard_name: "My LLM App - Observability"
 ### 1. Basic Usage
 
 ```python
-import vertiguard
+import detra
 
-# Initialize VertiGuard
-vg = vertiguard.init("vertiguard.yaml")
+# Initialize detra
+vg = detra.init("detra.yaml")
 
 # Decorate your LLM functions
 @vg.trace("extract_entities")
@@ -289,7 +289,7 @@ print(f"Score: {result.score}, Flagged: {result.flagged}")
 
 ### Decorator Types
 
-VertiGuard provides several decorator types:
+detra provides several decorator types:
 
 ```python
 # Generic trace (default: workflow)
@@ -326,11 +326,11 @@ VertiGuard provides several decorator types:
 After initialization, you can use module-level decorators:
 
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
-@vertiguard.trace("summarize")
+@detra.trace("summarize")
 async def summarize(text: str):
     return await llm.complete(prompt)
 ```
@@ -373,7 +373,7 @@ Alerts are automatically sent based on:
 - High latency
 - Error rates
 
-Configure in `vertiguard.yaml`:
+Configure in `detra.yaml`:
 
 ```yaml
 integrations:
@@ -396,7 +396,7 @@ Define custom monitors in configuration:
 alerts:
   - name: "High Hallucination Rate"
     description: "Too many outputs flagged for hallucination"
-    metric: "vertiguard.node.flagged"
+    metric: "detra.node.flagged"
     condition: "gt"
     threshold: 10
     window_minutes: 15
@@ -410,10 +410,10 @@ alerts:
 ## Code Structure
 
 ```
-verti-guard/
-├── src/vertiguard/
+detra/
+├── src/detra/
 │   ├── __init__.py              # Main exports
-│   ├── client.py                # VertiGuard client class
+│   ├── client.py                # detra client class
 │   ├── actions/                 # Alerting and incident management
 │   │   ├── alerts.py            # Alert handling
 │   │   ├── cases.py             # Case management
@@ -452,7 +452,7 @@ verti-guard/
 ├── examples/
 │   └── legal_analyzer/          # Example application
 │       ├── app.py               # Example code
-│       └── vertiguard.yaml      # Example config
+│       └── detra.yaml      # Example config
 ├── tests/                       # Test suite
 │   ├── test_actions.py          # Actions tests
 │   ├── test_config.py           # Config tests
@@ -465,7 +465,7 @@ verti-guard/
 
 ### Key Files Explained
 
-**`client.py`**: Main entry point. The `VertiGuard` class initializes all components and provides the decorator methods.
+**`client.py`**: Main entry point. The `detra` class initializes all components and provides the decorator methods.
 
 **`decorators/trace.py`**: Implements the tracing decorator that wraps functions, captures I/O, runs evaluation, and submits telemetry.
 
@@ -490,7 +490,7 @@ verti-guard/
 pytest
 
 # Run with coverage
-pytest --cov=vertiguard --cov-report=html
+pytest --cov=detra --cov-report=html
 
 # Run specific test file
 pytest tests/test_evaluation.py
@@ -520,7 +520,7 @@ Tests use fixtures defined in `conftest.py`:
 - `sample_node_config`: Sample node configuration
 - `sample_datadog_config`: Sample Datadog config
 - `sample_gemini_config`: Sample Gemini config
-- `sample_vertiguard_config`: Complete VertiGuard config
+- `sample_detra_config`: Complete detra config
 - `mock_datadog_client`: Mocked Datadog client
 - `mock_gemini_model`: Mocked Gemini model
 
@@ -530,17 +530,17 @@ Example test:
 
 ```python
 import pytest
-from vertiguard import VertiGuard
-from vertiguard.config.schema import VertiGuardConfig, DatadogConfig, GeminiConfig
+from detra import detra
+from detra.config.schema import detraConfig, DatadogConfig, GeminiConfig
 
 @pytest.mark.asyncio
 async def test_evaluation():
-    config = VertiGuardConfig(
+    config = detraConfig(
         app_name="test",
         datadog=DatadogConfig(api_key="test", app_key="test"),
         gemini=GeminiConfig(api_key="test"),
     )
-    vg = VertiGuard(config)
+    vg = detra(config)
     
     result = await vg.evaluate(
         node_name="test_node",
@@ -560,7 +560,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.mark.asyncio
 async def test_with_mock():
-    with patch("vertiguard.telemetry.datadog_client.MetricsApi") as mock_api:
+    with patch("detra.telemetry.datadog_client.MetricsApi") as mock_api:
         # Test code here
         pass
 ```
@@ -590,7 +590,7 @@ The example demonstrates:
 - Entity extraction from legal documents
 - Document summarization
 - Question answering with citations
-- Full VertiGuard integration
+- Full detra integration
 
 ## Advanced Usage
 
@@ -658,13 +658,13 @@ vg.flush()
 
 ### Common Issues
 
-**1. "VertiGuard not initialized" error**
-- Make sure to call `vertiguard.init()` before using decorators
-- Or use `vertiguard.get_client()` after initialization
+**1. "detra not initialized" error**
+- Make sure to call `detra.init()` before using decorators
+- Or use `detra.get_client()` after initialization
 
 **2. Evaluation not running**
 - Check that `evaluate=True` in decorator (default is True)
-- Verify node configuration exists in `vertiguard.yaml`
+- Verify node configuration exists in `detra.yaml`
 - Check that Gemini API key is set
 
 **3. Datadog metrics not appearing**

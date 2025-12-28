@@ -1,4 +1,4 @@
-"""Detection rules and monitor management for VertiGuard."""
+"""Detection rules and monitor management for detra."""
 
 from detra.detection.monitors import MonitorManager, MonitorDefinition
 from detra.detection.rules import DetectionRule, DetectionRuleEngine

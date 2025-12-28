@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from vertiguard.utils.retry import RetryConfig, async_retry, RetryError
-from vertiguard.utils.serialization import (
+from detra.utils.retry import RetryConfig, async_retry, RetryError
+from detra.utils.serialization import (
     safe_json_loads,
     safe_json_dumps,
     extract_json_from_text,

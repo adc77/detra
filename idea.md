@@ -1,8 +1,8 @@
-# VertiGuard: Complete Implementation Plan for Datadog LLM Observability Challenge
+# detra: Complete Implementation Plan for Datadog LLM Observability Challenge
 
 ## Challenge Requirements Mapping
 
-| Requirement | VertiGuard Solution |
+| Requirement | detra Solution |
 |-------------|---------------------|
 | LLM Application powered by Vertex AI/Gemini | Gemini as the LLM + Gemini as evaluation judge |
 | Stream LLM and runtime telemetry to Datadog | ddtrace LLMObs + custom metrics via API |
@@ -18,7 +18,7 @@
 
 ```bash
 # =============================================================================
-# VERTIGUARD CONFIGURATION
+# detra CONFIGURATION
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -42,22 +42,22 @@ GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
 
 # -----------------------------------------------------------------------------
-# VERTIGUARD SETTINGS
+# detra SETTINGS
 # -----------------------------------------------------------------------------
-VERTIGUARD_APP_NAME=legal-document-analyzer
-VERTIGUARD_ENV=development  # development, staging, production
-VERTIGUARD_LOG_LEVEL=INFO
+detra_APP_NAME=legal-document-analyzer
+detra_ENV=development  # development, staging, production
+detra_LOG_LEVEL=INFO
 
 # Evaluation Model Configuration
-VERTIGUARD_EVAL_MODEL=gemini-1.5-flash  # gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash-exp
-VERTIGUARD_EVAL_TEMPERATURE=0.1
-VERTIGUARD_EVAL_MAX_TOKENS=1024
+detra_EVAL_MODEL=gemini-2.5-flash
+detra_EVAL_TEMPERATURE=0.1
+detra_EVAL_MAX_TOKENS=1024
 
 # Thresholds
-VERTIGUARD_DEFAULT_ADHERENCE_THRESHOLD=0.85
-VERTIGUARD_LATENCY_WARNING_MS=3000
-VERTIGUARD_LATENCY_CRITICAL_MS=10000
-VERTIGUARD_ERROR_RATE_THRESHOLD=0.05
+detra_DEFAULT_ADHERENCE_THRESHOLD=0.85
+detra_LATENCY_WARNING_MS=3000
+detra_LATENCY_CRITICAL_MS=10000
+detra_ERROR_RATE_THRESHOLD=0.05
 
 # -----------------------------------------------------------------------------
 # INTEGRATIONS (OPTIONAL)
@@ -70,7 +70,7 @@ SLACK_CHANNEL=#llm-alerts
 PAGERDUTY_INTEGRATION_KEY=your_pagerduty_integration_key
 
 # Custom Webhook for external systems
-CUSTOM_WEBHOOK_URL=https://your-internal-api.com/vertiguard-events
+CUSTOM_WEBHOOK_URL=https://your-internal-api.com/detra-events
 ```
 
 ### Required API Keys Summary
@@ -87,17 +87,17 @@ CUSTOM_WEBHOOK_URL=https://your-internal-api.com/vertiguard-events
 ## Complete Project Structure
 
 ```
-vertiguard/
+detra/
 ├── pyproject.toml
 ├── .env.example
 ├── .env                          # Your actual credentials (gitignored)
 ├── .gitignore
 ├── README.md
-├── vertiguard.yaml               # Application configuration
+├── detra.yaml               # Application configuration
 ├── src/
-│   └── vertiguard/
+│   └── detra/
 │       ├── __init__.py
-│       ├── client.py             # Main VertiGuard client
+│       ├── client.py             # Main detra client
 │       ├── config/
 │       │   ├── __init__.py
 │       │   ├── schema.py         # Pydantic models
@@ -105,7 +105,7 @@ vertiguard/
 │       │   └── defaults.py       # Default configurations
 │       ├── decorators/
 │       │   ├── __init__.py
-│       │   └── trace.py          # @vertiguard.trace decorator
+│       │   └── trace.py          # @detra.trace decorator
 │       ├── evaluation/
 │       │   ├── __init__.py
 │       │   ├── engine.py         # Main evaluation orchestrator
@@ -147,10 +147,10 @@ vertiguard/
 ├── examples/
 │   ├── legal_analyzer/
 │   │   ├── app.py                # Example LLM application
-│   │   └── vertiguard.yaml       # Example config
+│   │   └── detra.yaml       # Example config
 │   └── simple_chatbot/
 │       ├── app.py
-│       └── vertiguard.yaml
+│       └── detra.yaml
 └── tests/
     ├── __init__.py
     ├── test_evaluation.py
@@ -166,7 +166,7 @@ vertiguard/
 
 ```toml
 [project]
-name = "vertiguard"
+name = "detra"
 version = "0.1.0"
 description = "End-to-end LLM observability for vertical AI applications with Datadog"
 readme = "README.md"
@@ -198,26 +198,26 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vertiguard"]
+packages = ["src/detra"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 ```
 
-### `src/vertiguard/__init__.py`
+### `src/detra/__init__.py`
 
 ```python
 """
-VertiGuard: End-to-end LLM Observability for Vertical AI Applications
+detra: End-to-end LLM Observability for Vertical AI Applications
 """
-from vertiguard.client import VertiGuard, init, get_client
-from vertiguard.decorators.trace import trace, workflow, llm, task, agent
-from vertiguard.config.schema import VertiGuardConfig
+from detra.client import detra, init, get_client
+from detra.decorators.trace import trace, workflow, llm, task, agent
+from detra.config.schema import detraConfig
 
 __version__ = "0.1.0"
 __all__ = [
-    "VertiGuard",
+    "detra",
     "init",
     "get_client",
     "trace",
@@ -225,11 +225,11 @@ __all__ = [
     "llm",
     "task",
     "agent",
-    "VertiGuardConfig",
+    "detraConfig",
 ]
 ```
 
-### `src/vertiguard/config/schema.py`
+### `src/detra/config/schema.py`
 
 ```python
 """Configuration schema using Pydantic"""
@@ -246,9 +246,7 @@ class Environment(str, Enum):
 
 
 class EvalModel(str, Enum):
-    GEMINI_15_PRO = "gemini-1.5-pro"
-    GEMINI_15_FLASH = "gemini-1.5-flash"
-    GEMINI_20_FLASH = "gemini-2.0-flash-exp"
+    GEMINI_MODEL = "gemini-2.5-flash
 
 
 class DatadogConfig(BaseModel):
@@ -355,7 +353,7 @@ class ThresholdsConfig(BaseModel):
     token_usage_critical: int = 50000
 
 
-class VertiGuardConfig(BaseModel):
+class detraConfig(BaseModel):
     app_name: str
     version: str = "1.0.0"
     environment: Environment = Environment.DEVELOPMENT
@@ -384,7 +382,7 @@ class VertiGuardConfig(BaseModel):
         return v
 
 
-class VertiGuardSettings(BaseSettings):
+class detraSettings(BaseSettings):
     """Environment-based settings that override config file"""
     
     dd_api_key: Optional[str] = Field(default=None, alias="DD_API_KEY")
@@ -395,9 +393,9 @@ class VertiGuardSettings(BaseSettings):
     google_cloud_project: Optional[str] = Field(default=None, alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="us-central1", alias="GOOGLE_CLOUD_LOCATION")
     
-    vertiguard_app_name: str = Field(default="vertiguard-app", alias="VERTIGUARD_APP_NAME")
-    vertiguard_env: str = Field(default="development", alias="VERTIGUARD_ENV")
-    vertiguard_eval_model: str = Field(default="gemini-1.5-flash", alias="VERTIGUARD_EVAL_MODEL")
+    detra_app_name: str = Field(default="detra-app", alias="detra_APP_NAME")
+    detra_env: str = Field(default="development", alias="detra_ENV")
+    detra_eval_model: str = Field(default="gemini-2.5-flash", alias="detra_EVAL_MODEL")
     
     slack_webhook_url: Optional[str] = Field(default=None, alias="SLACK_WEBHOOK_URL")
     slack_channel: str = Field(default="#llm-alerts", alias="SLACK_CHANNEL")
@@ -408,7 +406,7 @@ class VertiGuardSettings(BaseSettings):
         extra = "ignore"
 ```
 
-### `src/vertiguard/config/loader.py`
+### `src/detra/config/loader.py`
 
 ```python
 """Configuration loading and merging"""
@@ -418,7 +416,7 @@ from typing import Optional, Dict, Any
 import yaml
 from dotenv import load_dotenv
 
-from vertiguard.config.schema import VertiGuardConfig, VertiGuardSettings
+from detra.config.schema import detraConfig, detraSettings
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
@@ -451,7 +449,7 @@ def _expand_env_vars(obj: Any) -> Any:
 def load_config(
     config_path: Optional[str] = None,
     env_file: Optional[str] = None,
-) -> VertiGuardConfig:
+) -> detraConfig:
     """
     Load configuration from YAML file and environment variables.
     Environment variables take precedence over file values.
@@ -463,12 +461,12 @@ def load_config(
         load_dotenv()
     
     # Load environment settings
-    settings = VertiGuardSettings()
+    settings = detraSettings()
     
     # Start with defaults
     config_data: Dict[str, Any] = {
-        "app_name": settings.vertiguard_app_name,
-        "environment": settings.vertiguard_env,
+        "app_name": settings.detra_app_name,
+        "environment": settings.detra_env,
         "datadog": {
             "api_key": settings.dd_api_key or "",
             "app_key": settings.dd_app_key or "",
@@ -478,7 +476,7 @@ def load_config(
             "api_key": settings.google_api_key,
             "project_id": settings.google_cloud_project,
             "location": settings.google_cloud_location,
-            "model": settings.vertiguard_eval_model,
+            "model": settings.detra_eval_model,
         },
         "integrations": {
             "slack": {
@@ -502,7 +500,7 @@ def load_config(
     if settings.google_api_key:
         config_data["gemini"]["api_key"] = settings.google_api_key
     
-    return VertiGuardConfig(**config_data)
+    return detraConfig(**config_data)
 
 
 def _deep_merge(base: Dict, override: Dict) -> Dict:
@@ -517,10 +515,10 @@ def _deep_merge(base: Dict, override: Dict) -> Dict:
 
 
 # Global config singleton
-_config: Optional[VertiGuardConfig] = None
+_config: Optional[detraConfig] = None
 
 
-def get_config() -> VertiGuardConfig:
+def get_config() -> detraConfig:
     """Get the global configuration"""
     global _config
     if _config is None:
@@ -528,7 +526,7 @@ def get_config() -> VertiGuardConfig:
     return _config
 
 
-def set_config(config: VertiGuardConfig) -> None:
+def set_config(config: detraConfig) -> None:
     """Set the global configuration"""
     global _config
     _config = config
@@ -540,7 +538,7 @@ def get_node_config(node_name: str):
     return config.nodes.get(node_name)
 ```
 
-### `src/vertiguard/evaluation/gemini_judge.py`
+### `src/detra/evaluation/gemini_judge.py`
 
 ```python
 """Gemini-based LLM-as-Judge evaluation engine"""
@@ -550,8 +548,8 @@ from dataclasses import dataclass
 import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from vertiguard.config.schema import GeminiConfig
-from vertiguard.evaluation.prompts import (
+from detra.config.schema import GeminiConfig
+from detra.evaluation.prompts import (
     ADHERENCE_EVALUATION_PROMPT,
     BEHAVIOR_CHECK_PROMPT,
     ROOT_CAUSE_CLASSIFICATION_PROMPT,
@@ -835,7 +833,7 @@ class GeminiJudge:
         return text[:max_length - 3] + "..."
 ```
 
-### `src/vertiguard/evaluation/prompts.py`
+### `src/detra/evaluation/prompts.py`
 
 ```python
 """Evaluation prompt templates for Gemini judge"""
@@ -998,7 +996,7 @@ Respond with a JSON object:
 """
 ```
 
-### `src/vertiguard/evaluation/engine.py`
+### `src/detra/evaluation/engine.py`
 
 ```python
 """Main evaluation orchestrator"""
@@ -1006,9 +1004,9 @@ import asyncio
 from typing import Any, Dict, List, Optional
 import time
 
-from vertiguard.config.schema import NodeConfig, SecurityConfig
-from vertiguard.evaluation.gemini_judge import GeminiJudge, EvaluationResult
-from vertiguard.evaluation.rules import RuleBasedChecker
+from detra.config.schema import NodeConfig, SecurityConfig
+from detra.evaluation.gemini_judge import GeminiJudge, EvaluationResult
+from detra.evaluation.rules import RuleBasedChecker
 
 
 class EvaluationEngine:
@@ -1094,14 +1092,14 @@ class EvaluationEngine:
         return asyncio.run(self.evaluate(node_config, input_data, output_data, context))
 ```
 
-### `src/vertiguard/evaluation/rules.py`
+### `src/detra/evaluation/rules.py`
 
 ```python
 """Fast rule-based evaluation checks"""
 import re
 import json
 from typing import Any, Dict, List, Optional
-from vertiguard.config.schema import NodeConfig
+from detra.config.schema import NodeConfig
 
 
 class RuleBasedChecker:
@@ -1186,7 +1184,7 @@ class RuleBasedChecker:
         return results
 ```
 
-### `src/vertiguard/telemetry/datadog_client.py`
+### `src/detra/telemetry/datadog_client.py`
 
 ```python
 """Unified Datadog API client"""
@@ -1209,7 +1207,7 @@ from datadog_api_client.v2.model.metric_point import MetricPoint
 from datadog_api_client.v2.model.metric_intake_type import MetricIntakeType
 import structlog
 
-from vertiguard.config.schema import DatadogConfig
+from detra.config.schema import DatadogConfig
 
 logger = structlog.get_logger()
 
@@ -1314,7 +1312,7 @@ class DatadogClient:
         priority: str = "normal",
         tags: List[str] = None,
         aggregation_key: str = None,
-        source_type_name: str = "vertiguard",
+        source_type_name: str = "detra",
     ) -> Optional[Dict]:
         """Submit an event to Datadog"""
         try:
@@ -1479,7 +1477,7 @@ class DatadogClient:
                 
                 body = [ServiceCheck(
                     check=check,
-                    host_name="vertiguard",
+                    host_name="detra",
                     status=ServiceCheckStatus(status),
                     message=message,
                     tags=self._base_tags + (tags or []),
@@ -1493,7 +1491,7 @@ class DatadogClient:
             return False
 ```
 
-### `src/vertiguard/telemetry/llmobs_bridge.py`
+### `src/detra/telemetry/llmobs_bridge.py`
 
 ```python
 """Bridge to Datadog LLM Observability"""
@@ -1503,15 +1501,15 @@ from ddtrace.llmobs import LLMObs
 from ddtrace import tracer
 import structlog
 
-from vertiguard.config.schema import DatadogConfig, VertiGuardConfig
+from detra.config.schema import DatadogConfig, detraConfig
 
 logger = structlog.get_logger()
 
 
 class LLMObsBridge:
-    """Wrapper around ddtrace LLMObs for VertiGuard integration"""
+    """Wrapper around ddtrace LLMObs for detra integration"""
     
-    def __init__(self, config: VertiGuardConfig):
+    def __init__(self, config: detraConfig):
         self.config = config
         self._enabled = False
     
@@ -1626,10 +1624,10 @@ class LLMObsBridge:
         LLMObs.flush()
 ```
 
-### `src/vertiguard/decorators/trace.py`
+### `src/detra/decorators/trace.py`
 
 ```python
-"""VertiGuard trace decorators"""
+"""detra trace decorators"""
 import asyncio
 import functools
 import time
@@ -1637,10 +1635,10 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from ddtrace.llmobs import LLMObs
 import structlog
 
-from vertiguard.config.loader import get_config, get_node_config
-from vertiguard.config.schema import NodeConfig
-from vertiguard.evaluation.engine import EvaluationEngine
-from vertiguard.evaluation.gemini_judge import EvaluationResult
+from detra.config.loader import get_config, get_node_config
+from detra.config.schema import NodeConfig
+from detra.evaluation.engine import EvaluationEngine
+from detra.evaluation.gemini_judge import EvaluationResult
 
 logger = structlog.get_logger()
 
@@ -1659,7 +1657,7 @@ def set_datadog_client(client):
     _datadog_client = client
 
 
-class VertiGuardTrace:
+class detraTrace:
     """
     Decorator that wraps functions with:
     - Datadog LLM Observability tracing
@@ -1833,13 +1831,13 @@ class VertiGuardTrace:
         
         metrics = [
             {
-                "metric": f"vertiguard.node.latency",
+                "metric": f"detra.node.latency",
                 "type": "distribution",
                 "points": [[time.time(), latency_ms]],
                 "tags": base_tags,
             },
             {
-                "metric": f"vertiguard.node.calls",
+                "metric": f"detra.node.calls",
                 "type": "count",
                 "points": [[time.time(), 1]],
                 "tags": base_tags + [f"status:{'error' if error else 'success'}"],
@@ -1849,13 +1847,13 @@ class VertiGuardTrace:
         if eval_result:
             metrics.extend([
                 {
-                    "metric": f"vertiguard.node.adherence_score",
+                    "metric": f"detra.node.adherence_score",
                     "type": "gauge",
                     "points": [[time.time(), eval_result.score]],
                     "tags": base_tags,
                 },
                 {
-                    "metric": f"vertiguard.node.flagged",
+                    "metric": f"detra.node.flagged",
                     "type": "count",
                     "points": [[time.time(), 1 if eval_result.flagged else 0]],
                     "tags": base_tags + (
@@ -1864,13 +1862,13 @@ class VertiGuardTrace:
                     ),
                 },
                 {
-                    "metric": f"vertiguard.evaluation.latency",
+                    "metric": f"detra.evaluation.latency",
                     "type": "distribution",
                     "points": [[time.time(), eval_result.latency_ms]],
                     "tags": base_tags,
                 },
                 {
-                    "metric": f"vertiguard.evaluation.tokens",
+                    "metric": f"detra.evaluation.tokens",
                     "type": "count",
                     "points": [[time.time(), eval_result.eval_tokens_used]],
                     "tags": base_tags,
@@ -1881,7 +1879,7 @@ class VertiGuardTrace:
             for issue in eval_result.security_issues:
                 if issue.get("detected"):
                     metrics.append({
-                        "metric": f"vertiguard.security.issues",
+                        "metric": f"detra.security.issues",
                         "type": "count",
                         "points": [[time.time(), 1]],
                         "tags": base_tags + [
@@ -1924,7 +1922,7 @@ class VertiGuardTrace:
         """
         
         _datadog_client.submit_event(
-            title=f"VertiGuard Flag: {self.node_name}",
+            title=f"detra Flag: {self.node_name}",
             text=text,
             alert_type="warning" if eval_result.score > 0.5 else "error",
             tags=[
@@ -1932,7 +1930,7 @@ class VertiGuardTrace:
                 f"category:{eval_result.flag_category}",
                 f"score:{eval_result.score:.2f}",
             ],
-            aggregation_key=f"vertiguard-flag-{self.node_name}",
+            aggregation_key=f"detra-flag-{self.node_name}",
         )
     
     def _submit_error_event(self, error: Exception, input_data: Any):
@@ -1941,11 +1939,11 @@ class VertiGuardTrace:
             return
         
         _datadog_client.submit_event(
-            title=f"VertiGuard Error: {self.node_name}",
+            title=f"detra Error: {self.node_name}",
             text=f"```\n{str(error)}\n```\n\nInput: {str(input_data)[:300]}",
             alert_type="error",
             tags=[f"node:{self.node_name}", f"error_type:{type(error).__name__}"],
-            aggregation_key=f"vertiguard-error-{self.node_name}",
+            aggregation_key=f"detra-error-{self.node_name}",
         )
     
     def _format_failed_checks(self, checks) -> str:
@@ -1972,53 +1970,53 @@ class VertiGuardTrace:
 
 
 # Convenience functions
-def trace(node_name: str, **kwargs) -> VertiGuardTrace:
+def trace(node_name: str, **kwargs) -> detraTrace:
     """Create a trace decorator"""
-    return VertiGuardTrace(node_name, span_kind="workflow", **kwargs)
+    return detraTrace(node_name, span_kind="workflow", **kwargs)
 
 
-def workflow(node_name: str, **kwargs) -> VertiGuardTrace:
+def workflow(node_name: str, **kwargs) -> detraTrace:
     """Create a workflow trace decorator"""
-    return VertiGuardTrace(node_name, span_kind="workflow", **kwargs)
+    return detraTrace(node_name, span_kind="workflow", **kwargs)
 
 
-def llm(node_name: str, **kwargs) -> VertiGuardTrace:
+def llm(node_name: str, **kwargs) -> detraTrace:
     """Create an LLM trace decorator"""
-    return VertiGuardTrace(node_name, span_kind="llm", **kwargs)
+    return detraTrace(node_name, span_kind="llm", **kwargs)
 
 
-def task(node_name: str, **kwargs) -> VertiGuardTrace:
+def task(node_name: str, **kwargs) -> detraTrace:
     """Create a task trace decorator"""
-    return VertiGuardTrace(node_name, span_kind="task", **kwargs)
+    return detraTrace(node_name, span_kind="task", **kwargs)
 
 
-def agent(node_name: str, **kwargs) -> VertiGuardTrace:
+def agent(node_name: str, **kwargs) -> detraTrace:
     """Create an agent trace decorator"""
-    return VertiGuardTrace(node_name, span_kind="agent", **kwargs)
+    return detraTrace(node_name, span_kind="agent", **kwargs)
 ```
 
-### `src/vertiguard/detection/monitors.py`
+### `src/detra/detection/monitors.py`
 
 ```python
 """Monitor definitions and creation"""
 from typing import Dict, List, Optional
 import structlog
 
-from vertiguard.config.schema import AlertConfig, VertiGuardConfig, ThresholdsConfig
-from vertiguard.telemetry.datadog_client import DatadogClient
+from detra.config.schema import AlertConfig, detraConfig, ThresholdsConfig
+from detra.telemetry.datadog_client import DatadogClient
 
 logger = structlog.get_logger()
 
 
 class MonitorManager:
-    """Manages Datadog monitors for VertiGuard"""
+    """Manages Datadog monitors for detra"""
     
     # Pre-defined monitor templates
     MONITOR_TEMPLATES = {
         "adherence_warning": {
-            "name": "VertiGuard: Low Adherence Score Warning",
+            "name": "detra: Low Adherence Score Warning",
             "type": "metric alert",
-            "query": "avg(last_5m):avg:vertiguard.node.adherence_score{{*}} < {threshold}",
+            "query": "avg(last_5m):avg:detra.node.adherence_score{{*}} < {threshold}",
             "message": """
 ## Low Adherence Score Detected
 
@@ -2039,9 +2037,9 @@ The LLM output adherence score has dropped below the warning threshold.
             "priority": 3,
         },
         "adherence_critical": {
-            "name": "VertiGuard: Critical Adherence Score",
+            "name": "detra: Critical Adherence Score",
             "type": "metric alert",
-            "query": "avg(last_5m):avg:vertiguard.node.adherence_score{{*}} < {threshold}",
+            "query": "avg(last_5m):avg:detra.node.adherence_score{{*}} < {threshold}",
             "message": """
 ## Critical Adherence Score Alert
 
@@ -2061,9 +2059,9 @@ The LLM output adherence score has dropped to critical levels.
             "priority": 1,
         },
         "flag_rate": {
-            "name": "VertiGuard: High Flag Rate",
+            "name": "detra: High Flag Rate",
             "type": "metric alert",
-            "query": "sum(last_5m):sum:vertiguard.node.flagged{{*}}.as_count() / sum:vertiguard.node.calls{{*}}.as_count() > {threshold}",
+            "query": "sum(last_5m):sum:detra.node.flagged{{*}}.as_count() / sum:detra.node.calls{{*}}.as_count() > {threshold}",
             "message": """
 ## High Flag Rate Detected
 
@@ -2082,9 +2080,9 @@ More than {threshold_pct}% of LLM calls are being flagged.
             "priority": 2,
         },
         "latency_warning": {
-            "name": "VertiGuard: High Latency Warning",
+            "name": "detra: High Latency Warning",
             "type": "metric alert",
-            "query": "avg(last_5m):avg:vertiguard.node.latency{{*}} > {threshold}",
+            "query": "avg(last_5m):avg:detra.node.latency{{*}} > {threshold}",
             "message": """
 ## High Latency Detected
 
@@ -2104,9 +2102,9 @@ LLM call latency has exceeded warning threshold.
             "priority": 3,
         },
         "latency_critical": {
-            "name": "VertiGuard: Critical Latency",
+            "name": "detra: Critical Latency",
             "type": "metric alert",
-            "query": "avg(last_5m):avg:vertiguard.node.latency{{*}} > {threshold}",
+            "query": "avg(last_5m):avg:detra.node.latency{{*}} > {threshold}",
             "message": """
 ## Critical Latency Alert
 
@@ -2126,9 +2124,9 @@ LLM call latency has exceeded critical threshold.
             "priority": 1,
         },
         "error_rate": {
-            "name": "VertiGuard: High Error Rate",
+            "name": "detra: High Error Rate",
             "type": "metric alert",
-            "query": "sum(last_5m):sum:vertiguard.node.calls{{status:error}}.as_count() / sum:vertiguard.node.calls{{*}}.as_count() > {threshold}",
+            "query": "sum(last_5m):sum:detra.node.calls{{status:error}}.as_count() / sum:detra.node.calls{{*}}.as_count() > {threshold}",
             "message": """
 ## High Error Rate Detected
 
@@ -2148,9 +2146,9 @@ LLM call error rate has exceeded threshold.
             "priority": 2,
         },
         "security_issues": {
-            "name": "VertiGuard: Security Issues Detected",
+            "name": "detra: Security Issues Detected",
             "type": "metric alert",
-            "query": "sum(last_5m):sum:vertiguard.security.issues{{*}}.as_count() > 0",
+            "query": "sum(last_5m):sum:detra.security.issues{{*}}.as_count() > 0",
             "message": """
 ## Security Issues Detected
 
@@ -2171,9 +2169,9 @@ Security checks have flagged potential issues.
             "priority": 1,
         },
         "token_usage": {
-            "name": "VertiGuard: High Token Usage",
+            "name": "detra: High Token Usage",
             "type": "metric alert",
-            "query": "sum(last_1h):sum:vertiguard.evaluation.tokens{{*}}.as_count() > {threshold}",
+            "query": "sum(last_1h):sum:detra.evaluation.tokens{{*}}.as_count() > {threshold}",
             "message": """
 ## High Token Usage Alert
 
@@ -2194,7 +2192,7 @@ Evaluation token usage has exceeded threshold.
         },
     }
     
-    def __init__(self, datadog_client: DatadogClient, config: VertiGuardConfig):
+    def __init__(self, datadog_client: DatadogClient, config: detraConfig):
         self.client = datadog_client
         self.config = config
         self.thresholds = config.thresholds
@@ -2249,7 +2247,7 @@ Evaluation token usage has exceeded threshold.
             monitor_type=template["type"],
             thresholds=thresholds,
             priority=template.get("priority"),
-            tags=[f"app:{self.config.app_name}", "source:vertiguard"],
+            tags=[f"app:{self.config.app_name}", "source:detra"],
         )
     
     def create_custom_monitors(self, alerts: List[AlertConfig]) -> List[Dict]:
@@ -2280,11 +2278,11 @@ Evaluation token usage has exceeded threshold.
             """
             
             result = self.client.create_monitor(
-                name=f"VertiGuard: {alert.name}",
+                name=f"detra: {alert.name}",
                 query=query,
                 message=message,
                 thresholds={"critical": alert.threshold},
-                tags=alert.tags + [f"app:{self.config.app_name}", "source:vertiguard"],
+                tags=alert.tags + [f"app:{self.config.app_name}", "source:detra"],
             )
             
             if result:
@@ -2293,7 +2291,7 @@ Evaluation token usage has exceeded threshold.
         return created
 ```
 
-### `src/vertiguard/dashboard/templates.py`
+### `src/detra/dashboard/templates.py`
 
 ```python
 """Dashboard JSON templates"""
@@ -2303,7 +2301,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
     """Generate the complete dashboard definition"""
     
     return {
-        "title": f"VertiGuard: {app_name} LLM Observability",
+        "title": f"detra: {app_name} LLM Observability",
         "description": "End-to-end LLM observability dashboard with health metrics, security signals, and actionable insights",
         "widgets": [
             # Row 1: Health Overview
@@ -2319,7 +2317,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "query_value",
                                 "requests": [
                                     {
-                                        "q": "avg:vertiguard.node.adherence_score{*}",
+                                        "q": "avg:detra.node.adherence_score{*}",
                                         "aggregator": "avg"
                                     }
                                 ],
@@ -2338,7 +2336,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "query_value",
                                 "requests": [
                                     {
-                                        "q": "sum:vertiguard.node.flagged{*}.as_count() / sum:vertiguard.node.calls{*}.as_count() * 100",
+                                        "q": "sum:detra.node.flagged{*}.as_count() / sum:detra.node.calls{*}.as_count() * 100",
                                         "aggregator": "avg"
                                     }
                                 ],
@@ -2357,7 +2355,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "query_value",
                                 "requests": [
                                     {
-                                        "q": "sum:vertiguard.node.calls{status:error}.as_count() / sum:vertiguard.node.calls{*}.as_count() * 100",
+                                        "q": "sum:detra.node.calls{status:error}.as_count() / sum:detra.node.calls{*}.as_count() * 100",
                                         "aggregator": "avg"
                                     }
                                 ],
@@ -2376,7 +2374,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "query_value",
                                 "requests": [
                                     {
-                                        "q": "avg:vertiguard.node.latency{*}",
+                                        "q": "avg:detra.node.latency{*}",
                                         "aggregator": "avg"
                                     }
                                 ],
@@ -2399,7 +2397,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "timeseries",
                     "requests": [
                         {
-                            "q": "avg:vertiguard.node.adherence_score{*} by {node}",
+                            "q": "avg:detra.node.adherence_score{*} by {node}",
                             "display_type": "line"
                         }
                     ],
@@ -2417,7 +2415,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "toplist",
                     "requests": [
                         {
-                            "q": "sum:vertiguard.node.flagged{*} by {category}.as_count()",
+                            "q": "sum:detra.node.flagged{*} by {category}.as_count()",
                             "style": {"palette": "warm"}
                         }
                     ]
@@ -2429,7 +2427,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "toplist",
                     "requests": [
                         {
-                            "q": "sum:vertiguard.node.flagged{*} by {node}.as_count()",
+                            "q": "sum:detra.node.flagged{*} by {node}.as_count()",
                             "style": {"palette": "orange"}
                         }
                     ]
@@ -2448,7 +2446,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "toplist",
                                 "requests": [
                                     {
-                                        "q": "sum:vertiguard.security.issues{*} by {check}.as_count()",
+                                        "q": "sum:detra.security.issues{*} by {check}.as_count()",
                                         "style": {"palette": "red"}
                                     }
                                 ]
@@ -2460,7 +2458,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                                 "type": "timeseries",
                                 "requests": [
                                     {
-                                        "q": "sum:vertiguard.security.issues{*} by {severity}.as_count()",
+                                        "q": "sum:detra.security.issues{*} by {severity}.as_count()",
                                         "display_type": "bars"
                                     }
                                 ]
@@ -2476,7 +2474,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "heatmap",
                     "requests": [
                         {
-                            "q": "avg:vertiguard.node.latency{*} by {node}"
+                            "q": "avg:detra.node.latency{*} by {node}"
                         }
                     ]
                 }
@@ -2486,9 +2484,9 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "title": "Latency Percentiles",
                     "type": "timeseries",
                     "requests": [
-                        {"q": "p50:vertiguard.node.latency{*}", "display_type": "line"},
-                        {"q": "p95:vertiguard.node.latency{*}", "display_type": "line"},
-                        {"q": "p99:vertiguard.node.latency{*}", "display_type": "line"}
+                        {"q": "p50:detra.node.latency{*}", "display_type": "line"},
+                        {"q": "p95:detra.node.latency{*}", "display_type": "line"},
+                        {"q": "p99:detra.node.latency{*}", "display_type": "line"}
                     ]
                 }
             },
@@ -2499,7 +2497,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "timeseries",
                     "requests": [
                         {
-                            "q": "sum:vertiguard.evaluation.tokens{*}.as_count()",
+                            "q": "sum:detra.evaluation.tokens{*}.as_count()",
                             "display_type": "bars"
                         }
                     ]
@@ -2512,7 +2510,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                     "type": "timeseries",
                     "requests": [
                         {
-                            "q": "sum:vertiguard.node.calls{*} by {node}.as_count()",
+                            "q": "sum:detra.node.calls{*} by {node}.as_count()",
                             "display_type": "bars"
                         }
                     ]
@@ -2523,7 +2521,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                 "definition": {
                     "title": "Recent Events",
                     "type": "event_stream",
-                    "query": "sources:vertiguard",
+                    "query": "sources:detra",
                     "event_size": "s"
                 }
             },
@@ -2532,7 +2530,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
                 "definition": {
                     "title": "Monitor Status",
                     "type": "manage_status",
-                    "query": "tag:(source:vertiguard)",
+                    "query": "tag:(source:detra)",
                     "sort": "status,asc",
                     "display_format": "countsAndList"
                 }
@@ -2556,7 +2554,7 @@ def get_dashboard_definition(app_name: str, env: str = "production") -> dict:
     }
 ```
 
-### `src/vertiguard/actions/notifications.py`
+### `src/detra/actions/notifications.py`
 
 ```python
 """Notification handlers for Slack, PagerDuty, and webhooks"""
@@ -2565,7 +2563,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 import structlog
 
-from vertiguard.config.schema import SlackConfig, PagerDutyConfig, WebhookConfig, IntegrationsConfig
+from detra.config.schema import SlackConfig, PagerDutyConfig, WebhookConfig, IntegrationsConfig
 
 logger = structlog.get_logger()
 
@@ -2643,13 +2641,13 @@ class NotificationManager:
             "attachments": [
                 {
                     "color": color,
-                    "title": f"🚩 VertiGuard Flag: {node_name}",
+                    "title": f"🚩 detra Flag: {node_name}",
                     "fields": [
                         {"title": "Score", "value": f"{score:.2f}", "short": True},
                         {"title": "Category", "value": category, "short": True},
                         {"title": "Reason", "value": reason, "short": False},
                     ],
-                    "footer": "VertiGuard LLM Observability",
+                    "footer": "detra LLM Observability",
                     "ts": int(time.time()),
                 }
             ],
@@ -2694,7 +2692,7 @@ class NotificationManager:
                         {"title": "Incident ID", "value": incident_id, "short": True},
                         {"title": "Severity", "value": severity, "short": True},
                     ],
-                    "footer": "VertiGuard LLM Observability",
+                    "footer": "detra LLM Observability",
                 }
             ]
         }
@@ -2725,11 +2723,11 @@ class NotificationManager:
         payload = {
             "routing_key": self.config.pagerduty.integration_key,
             "event_action": "trigger",
-            "dedup_key": f"vertiguard-{node_name}-{category}",
+            "dedup_key": f"detra-{node_name}-{category}",
             "payload": {
-                "summary": f"VertiGuard: {node_name} flagged - {reason}",
+                "summary": f"detra: {node_name} flagged - {reason}",
                 "severity": pd_severity,
-                "source": "vertiguard",
+                "source": "detra",
                 "component": node_name,
                 "custom_details": {
                     "score": score,
@@ -2764,9 +2762,9 @@ class NotificationManager:
             "routing_key": self.config.pagerduty.integration_key,
             "event_action": "trigger",
             "payload": {
-                "summary": f"VertiGuard Incident: {title}",
+                "summary": f"detra Incident: {title}",
                 "severity": pd_severity,
-                "source": "vertiguard",
+                "source": "detra",
                 "custom_details": details or {},
             }
         }
@@ -2798,16 +2796,16 @@ class NotificationManager:
 import time  # Add at top of file
 ```
 
-### `src/vertiguard/actions/incidents.py`
+### `src/detra/actions/incidents.py`
 
 ```python
 """Incident and Case management"""
 from typing import Any, Dict, List, Optional
 import structlog
 
-from vertiguard.telemetry.datadog_client import DatadogClient
-from vertiguard.actions.notifications import NotificationManager
-from vertiguard.evaluation.gemini_judge import EvaluationResult
+from detra.telemetry.datadog_client import DatadogClient
+from detra.actions.notifications import NotificationManager
+from detra.evaluation.gemini_judge import EvaluationResult
 
 logger = structlog.get_logger()
 
@@ -2953,47 +2951,47 @@ class IncidentManager:
         return incident
 ```
 
-### `src/vertiguard/client.py`
+### `src/detra/client.py`
 
 ```python
-"""Main VertiGuard client"""
+"""Main detra client"""
 from typing import Optional
 import structlog
 import atexit
 
-from vertiguard.config.loader import load_config, set_config, get_config
-from vertiguard.config.schema import VertiGuardConfig
-from vertiguard.telemetry.datadog_client import DatadogClient
-from vertiguard.telemetry.llmobs_bridge import LLMObsBridge
-from vertiguard.evaluation.gemini_judge import GeminiJudge
-from vertiguard.evaluation.engine import EvaluationEngine
-from vertiguard.detection.monitors import MonitorManager
-from vertiguard.dashboard.templates import get_dashboard_definition
-from vertiguard.actions.notifications import NotificationManager
-from vertiguard.actions.incidents import IncidentManager
-from vertiguard.decorators import trace as trace_module
+from detra.config.loader import load_config, set_config, get_config
+from detra.config.schema import detraConfig
+from detra.telemetry.datadog_client import DatadogClient
+from detra.telemetry.llmobs_bridge import LLMObsBridge
+from detra.evaluation.gemini_judge import GeminiJudge
+from detra.evaluation.engine import EvaluationEngine
+from detra.detection.monitors import MonitorManager
+from detra.dashboard.templates import get_dashboard_definition
+from detra.actions.notifications import NotificationManager
+from detra.actions.incidents import IncidentManager
+from detra.decorators import trace as trace_module
 
 logger = structlog.get_logger()
 
 # Global client instance
-_client: Optional["VertiGuard"] = None
+_client: Optional["detra"] = None
 
 
-class VertiGuard:
+class detra:
     """
-    Main VertiGuard client for LLM observability.
+    Main detra client for LLM observability.
     
     Usage:
-        import vertiguard
+        import detra
         
-        vg = vertiguard.init("vertiguard.yaml")
+        vg = detra.init("detra.yaml")
         
         @vg.trace("extract_entities")
         def extract_entities(doc):
             return llm.complete(prompt)
     """
     
-    def __init__(self, config: VertiGuardConfig):
+    def __init__(self, config: detraConfig):
         self.config = config
         set_config(config)
         
@@ -3021,7 +3019,7 @@ class VertiGuard:
         atexit.register(self._cleanup)
         
         logger.info(
-            "VertiGuard initialized",
+            "detra initialized",
             app_name=config.app_name,
             env=config.environment.value,
             nodes=list(config.nodes.keys()),
@@ -3087,7 +3085,7 @@ class VertiGuard:
         return results
     
     def setup_dashboard(self) -> Optional[dict]:
-        """Create the VertiGuard dashboard"""
+        """Create the detra dashboard"""
         if not self.config.create_dashboard:
             return None
         
@@ -3164,7 +3162,7 @@ class VertiGuard:
     def submit_service_check(self, status: int = 0, message: str = ""):
         """Submit a service check (health check)"""
         return self.datadog_client.submit_service_check(
-            check=f"vertiguard.{self.config.app_name}.health",
+            check=f"detra.{self.config.app_name}.health",
             status=status,
             message=message,
         )
@@ -3178,17 +3176,17 @@ def init(
     config_path: Optional[str] = None,
     env_file: Optional[str] = None,
     **kwargs,
-) -> VertiGuard:
+) -> detra:
     """
-    Initialize VertiGuard with configuration.
+    Initialize detra with configuration.
     
     Args:
-        config_path: Path to vertiguard.yaml config file
+        config_path: Path to detra.yaml config file
         env_file: Path to .env file (optional)
         **kwargs: Override config values
     
     Returns:
-        Initialized VertiGuard client
+        Initialized detra client
     """
     global _client
     
@@ -3199,15 +3197,15 @@ def init(
         if hasattr(config, key):
             setattr(config, key, value)
     
-    _client = VertiGuard(config)
+    _client = detra(config)
     return _client
 
 
-def get_client() -> VertiGuard:
-    """Get the global VertiGuard client"""
+def get_client() -> detra:
+    """Get the global detra client"""
     global _client
     if _client is None:
-        raise RuntimeError("VertiGuard not initialized. Call vertiguard.init() first.")
+        raise RuntimeError("detra not initialized. Call detra.init() first.")
     return _client
 ```
 
@@ -3215,10 +3213,10 @@ def get_client() -> VertiGuard:
 
 ## Example Application Configuration
 
-### `vertiguard.yaml`
+### `detra.yaml`
 
 ```yaml
-# VertiGuard Configuration for Legal Document Analyzer
+# detra Configuration for Legal Document Analyzer
 app_name: legal-document-analyzer
 version: "1.0.0"
 environment: production
@@ -3235,7 +3233,7 @@ datadog:
 # Gemini evaluation configuration
 gemini:
   api_key: ${GOOGLE_API_KEY}
-  model: gemini-1.5-flash
+  model: gemini-2.5-flash
   temperature: 0.1
   max_tokens: 1024
 
@@ -3349,7 +3347,7 @@ integrations:
 alerts:
   - name: "High Hallucination Rate"
     description: "Too many outputs flagged for hallucination"
-    metric: "vertiguard.node.flagged"
+    metric: "detra.node.flagged"
     condition: "gt"
     threshold: 10
     window_minutes: 15
@@ -3361,7 +3359,7 @@ alerts:
 
   - name: "Critical Entity Extraction Failure"
     description: "Entity extraction success rate too low"
-    metric: "vertiguard.node.adherence_score"
+    metric: "detra.node.adherence_score"
     condition: "lt"
     threshold: 0.75
     window_minutes: 10
@@ -3385,21 +3383,21 @@ dashboard_name: "Legal AI - LLM Observability"
 
 ```python
 """
-Example Legal Document Analyzer with VertiGuard
+Example Legal Document Analyzer with detra
 """
 import os
 import json
 from typing import Dict, Any
 import google.generativeai as genai
 
-# Initialize VertiGuard
-import vertiguard
+# Initialize detra
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # Setup Gemini for the actual LLM calls
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 
 @vg.workflow("legal_document_pipeline")
@@ -3495,7 +3493,7 @@ Question: {query}
 
 if __name__ == "__main__":
     # Setup monitors and dashboard on first run
-    print("Setting up VertiGuard monitors and dashboard...")
+    print("Setting up detra monitors and dashboard...")
     setup_result = vg.setup_all(slack_channel="legal-ai-alerts")
     print(f"Created {len(setup_result['monitors']['default_monitors'])} monitors")
     if setup_result['dashboard']:
@@ -3549,7 +3547,7 @@ if __name__ == "__main__":
 
 ```bash
 # 1. Create project
-mkdir vertiguard && cd vertiguard
+mkdir detra && cd detra
 uv init
 
 # 2. Add dependencies
@@ -3558,7 +3556,7 @@ uv add ddtrace datadog-api-client datadog google-generativeai \
     httpx structlog tenacity python-dotenv
 
 # 3. Create directory structure
-mkdir -p src/vertiguard/{config,decorators,evaluation,telemetry,detection,actions,dashboard,security,utils}
+mkdir -p src/detra/{config,decorators,evaluation,telemetry,detection,actions,dashboard,security,utils}
 mkdir -p examples/legal_analyzer tests
 
 # 4. Copy all the code files above

@@ -12,7 +12,7 @@ logger = structlog.get_logger()
 
 class EventSubmitter:
     """
-    High-level interface for submitting VertiGuard events.
+    High-level interface for submitting detra events.
 
     Provides semantic methods for common event types like
     flags, errors, and security issues.
@@ -81,7 +81,7 @@ class EventSubmitter:
         alert_type = "warning" if score > 0.5 else "error"
 
         return await self.client.submit_event(
-            title=f"VertiGuard Flag: {node_name}",
+            title=f"detra Flag: {node_name}",
             text=text,
             alert_type=alert_type,
             tags=[
@@ -90,7 +90,7 @@ class EventSubmitter:
                 f"score:{score:.2f}",
                 f"app:{self.app_name}",
             ],
-            aggregation_key=f"vertiguard-flag-{node_name}",
+            aggregation_key=f"detra-flag-{node_name}",
         )
 
     async def submit_error_event(
@@ -122,7 +122,7 @@ class EventSubmitter:
 """
 
         return await self.client.submit_event(
-            title=f"VertiGuard Error: {node_name}",
+            title=f"detra Error: {node_name}",
             text=text,
             alert_type="error",
             tags=[
@@ -130,7 +130,7 @@ class EventSubmitter:
                 f"error_type:{type(error).__name__}",
                 f"app:{self.app_name}",
             ],
-            aggregation_key=f"vertiguard-error-{node_name}",
+            aggregation_key=f"detra-error-{node_name}",
         )
 
     async def submit_security_event(
@@ -171,7 +171,7 @@ class EventSubmitter:
         alert_type = "error" if severity in ("critical", "high") else "warning"
 
         return await self.client.submit_event(
-            title=f"VertiGuard Security: {check_type} in {node_name}",
+            title=f"detra Security: {check_type} in {node_name}",
             text=text,
             alert_type=alert_type,
             tags=[
@@ -180,7 +180,7 @@ class EventSubmitter:
                 f"severity:{severity}",
                 f"app:{self.app_name}",
             ],
-            aggregation_key=f"vertiguard-security-{node_name}-{check_type}",
+            aggregation_key=f"detra-security-{node_name}-{check_type}",
         )
 
     async def submit_incident_event(
@@ -216,7 +216,7 @@ class EventSubmitter:
 """
 
         return await self.client.submit_event(
-            title=f"VertiGuard Incident: {title}",
+            title=f"detra Incident: {title}",
             text=text,
             alert_type="error" if severity in ("SEV-1", "SEV-2") else "warning",
             priority="normal",
@@ -225,5 +225,5 @@ class EventSubmitter:
                 f"severity:{severity}",
                 f"app:{self.app_name}",
             ],
-            aggregation_key=f"vertiguard-incident-{incident_id}",
+            aggregation_key=f"detra-incident-{incident_id}",
         )

@@ -7,16 +7,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from vertiguard.config.schema import (
+from detra.config.schema import (
     IntegrationsConfig,
     SlackConfig,
     PagerDutyConfig,
     WebhookConfig,
 )
-from vertiguard.actions.notifications import NotificationManager
-from vertiguard.actions.alerts import AlertHandler, AlertType, Alert, AlertSeverity
-from vertiguard.actions.cases import CaseManager, Case, CaseStatus
-from vertiguard.actions.incidents import IncidentManager
+from detra.actions.notifications import NotificationManager
+from detra.actions.alerts import AlertHandler, AlertType, Alert, AlertSeverity
+from detra.actions.cases import CaseManager, Case, CaseStatus
+from detra.actions.incidents import IncidentManager
 
 
 class TestNotificationManager:
@@ -266,7 +266,7 @@ class TestCaseManager:
 
     def test_create_case(self, manager):
         """Test creating a case."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         case = manager.create_case(
             title="Test Case",
             description="Test description",
@@ -279,7 +279,7 @@ class TestCaseManager:
 
     def test_get_case(self, manager):
         """Test retrieving a case."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         created = manager.create_case(
             title="Test",
             description="Test",
@@ -292,7 +292,7 @@ class TestCaseManager:
 
     def test_update_case_status(self, manager):
         """Test updating case status."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         case = manager.create_case(
             title="Test",
             description="Test",
@@ -305,7 +305,7 @@ class TestCaseManager:
 
     def test_add_case_note(self, manager):
         """Test adding a note to a case."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         case = manager.create_case(
             title="Test",
             description="Test",
@@ -319,7 +319,7 @@ class TestCaseManager:
 
     def test_list_cases_by_status(self, manager):
         """Test listing cases by status."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         case1 = manager.create_case(
             title="Open Case",
             description="Test",
@@ -340,7 +340,7 @@ class TestCaseManager:
 
     def test_close_case(self, manager):
         """Test closing a case with resolution."""
-        from vertiguard.actions.cases import CasePriority
+        from detra.actions.cases import CasePriority
         case = manager.create_case(
             title="Test",
             description="Test",

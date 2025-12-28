@@ -1,4 +1,4 @@
-"""Security scanning and signal detection for VertiGuard."""
+"""Security scanning and signal detection for detra."""
 
 from detra.security.scanners import (
     SecurityScanner,

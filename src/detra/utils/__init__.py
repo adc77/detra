@@ -1,4 +1,4 @@
-"""Utility functions and helpers for VertiGuard."""
+"""Utility functions and helpers for detra."""
 
 from detra.utils.retry import (
     async_retry,

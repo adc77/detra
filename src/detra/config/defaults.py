@@ -1,4 +1,4 @@
-"""Default configuration values for VertiGuard."""
+"""Default configuration values for detra."""
 
 from typing import Any
 
@@ -38,7 +38,7 @@ DEFAULT_NODE_CONFIG: dict[str, Any] = {
 
 # Default Gemini configuration
 DEFAULT_GEMINI_CONFIG: dict[str, Any] = {
-    "model": "gemini-1.5-flash",
+    "model": "gemini-2.5-flash",
     "temperature": 0.1,
     "max_tokens": 1024,
     "location": "us-central1",

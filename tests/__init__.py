@@ -1,1 +1,1 @@
-"""VertiGuard test suite."""
+"""detra test suite."""
