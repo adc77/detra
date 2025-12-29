@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-End-to-End Test Script for VertiGuard
+End-to-End Test Script for detra
 
 Tests all major functionality:
-1. VertiGuard initialization
+1. detra initialization
 2. Decorator tracing
 3. Evaluation engine
 4. Datadog integration
@@ -30,7 +30,7 @@ logger = structlog.get_logger()
 
 
 class E2ETestSuite:
-    """End-to-end test suite for VertiGuard."""
+    """End-to-end test suite for detra."""
 
     def __init__(self, config_path: str):
         """Initialize test suite."""
@@ -43,7 +43,7 @@ class E2ETestSuite:
     async def run_all_tests(self):
         """Run all tests."""
         print("\n" + "="*60)
-        print("VERTIGUARD END-TO-END TEST SUITE")
+        print("detra END-TO-END TEST SUITE")
         print("="*60 + "\n")
 
         tests = [
@@ -88,10 +88,10 @@ class E2ETestSuite:
             self.errors.append((name, f"Unexpected error: {str(e)}"))
 
     async def test_initialization(self):
-        """Test VertiGuard initialization."""
-        self.vg = vertiguard.init(self.config_path)
-        assert self.vg is not None, "Failed to initialize VertiGuard"
-        assert vertiguard.is_initialized(), "VertiGuard not marked as initialized"
+        """Test detra initialization."""
+        self.vg = detra.init(self.config_path)
+        assert self.vg is not None, "Failed to initialize detra"
+        assert detra.is_initialized(), "detra not marked as initialized"
 
     async def test_configuration(self):
         """Test configuration loading."""
@@ -131,7 +131,7 @@ class E2ETestSuite:
 
         metrics = [
             {
-                "metric": "vertiguard.test.metric",
+                "metric": "detra.test.metric",
                 "type": "gauge",
                 "points": [[int(time.time()), 1.0]],
                 "tags": ["test:e2e"],
@@ -224,7 +224,7 @@ async def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run VertiGuard E2E tests")
+    parser = argparse.ArgumentParser(description="Run detra E2E tests")
     parser.add_argument(
         "--config",
         default="examples/legal_analyzer/detra.yaml",

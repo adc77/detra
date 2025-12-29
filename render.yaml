@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vertiguard-demo
+    name: detra-demo
     env: docker
     plan: free
     dockerfilePath: ./Dockerfile

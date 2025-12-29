@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Comprehensive Legal Document Analyzer - Full VertiGuard Demo
+Comprehensive Legal Document Analyzer - Full detra Demo
 
-This application demonstrates ALL VertiGuard features:
+This application demonstrates ALL detra features:
 1. Error tracking (Sentry-style)
 2. LLM monitoring with adherence scoring
 3. Agent workflow tracking (multi-step processes)
@@ -50,7 +50,7 @@ COLORS = {
 
 class ComprehensiveLegalAnalyzer:
     """
-    Comprehensive legal analyzer demonstrating all VertiGuard features.
+    Comprehensive legal analyzer demonstrating all detra features.
 
     Features demonstrated:
     - Traditional error tracking
@@ -66,7 +66,7 @@ class ComprehensiveLegalAnalyzer:
 
         Args:
             api_key: Google Gemini API key.
-            config_path: Path to VertiGuard config.
+            config_path: Path to detra config.
         """
         # Initialize detra
         self.vg = detra.init(config_path)
@@ -105,7 +105,7 @@ class ComprehensiveLegalAnalyzer:
     @detra.trace("extract_entities")
     async def extract_entities(self, document: str) -> dict[str, Any]:
         """
-        Extract legal entities with VertiGuard monitoring.
+        Extract legal entities with detra monitoring.
 
         Demonstrates:
         - Automatic adherence scoring
@@ -555,7 +555,7 @@ class LegalAnalyzerTUI:
 
     async def run(self):
         """Run the TUI."""
-        self.print_header("VertiGuard Comprehensive Demo - Legal Document Analyzer")
+        self.print_header("detra Comprehensive Demo - Legal Document Analyzer")
 
         # Get API key
         if not await self.setup_api_key():
@@ -633,7 +633,7 @@ class LegalAnalyzerTUI:
 
     async def initialize_analyzer(self) -> bool:
         """Initialize the analyzer."""
-        self.print_header("Step 3: Initializing VertiGuard")
+        self.print_header("Step 3: Initializing detra")
 
         try:
             config_path = Path(__file__).parent / "detra.yaml"
@@ -642,7 +642,7 @@ class LegalAnalyzerTUI:
                 config_path=str(config_path),
             )
 
-            self.print_success("VertiGuard initialized")
+            self.print_success("detra initialized")
             self.print_success(f"Model: gemini-2.0-flash-exp")
             self.print_success(f"DSPy enabled: {self.analyzer.dspy_optimizer.enabled}")
 

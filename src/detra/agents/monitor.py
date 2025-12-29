@@ -423,7 +423,7 @@ class AgentMonitor:
             # Submit metrics
             await self.datadog.submit_metrics([
                 {
-                    "metric": "vertiguard.agent.workflow.duration_ms",
+                    "metric": "detra.agent.workflow.duration_ms",
                     "type": "gauge",
                     "points": [[int(time.time()), workflow.get_duration_ms()]],
                     "tags": [
@@ -432,13 +432,13 @@ class AgentMonitor:
                     ],
                 },
                 {
-                    "metric": "vertiguard.agent.workflow.steps",
+                    "metric": "detra.agent.workflow.steps",
                     "type": "gauge",
                     "points": [[int(time.time()), len(workflow.steps)]],
                     "tags": [f"agent:{workflow.agent_name}"],
                 },
                 {
-                    "metric": "vertiguard.agent.tool_calls",
+                    "metric": "detra.agent.tool_calls",
                     "type": "gauge",
                     "points": [[int(time.time()), len(workflow.get_tool_calls())]],
                     "tags": [f"agent:{workflow.agent_name}"],

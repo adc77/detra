@@ -2,7 +2,7 @@
 """
 Export Datadog Configurations for Challenge Submission
 
-Exports all VertiGuard-related Datadog configurations to JSON files:
+Exports all detra-related Datadog configurations to JSON files:
 - Monitors
 - Dashboards
 - SLOs (if any)
@@ -31,7 +31,7 @@ load_dotenv()
 
 
 class DatadogExporter:
-    """Export Datadog configurations for VertiGuard."""
+    """Export Datadog configurations for detra."""
 
     def __init__(self, output_dir: str = "datadog_exports"):
         """
@@ -89,7 +89,7 @@ class DatadogExporter:
         print("\n" + "="*60 + "\n")
 
     def export_monitors(self) -> list:
-        """Export all VertiGuard monitors."""
+        """Export all detra monitors."""
         print("Exporting monitors...")
 
         try:
@@ -98,8 +98,8 @@ class DatadogExporter:
 
                 # Get all monitors
                 monitors = api.list_monitors(
-                    tags="source:vertiguard",
-                    name="VertiGuard",
+                    tags="source:detra",
+                    name="detra",
                 )
 
                 # Convert to serializable format
@@ -126,7 +126,7 @@ class DatadogExporter:
             return []
 
     def export_dashboards(self) -> list:
-        """Export all VertiGuard dashboards."""
+        """Export all detra dashboards."""
         print("Exporting dashboards...")
 
         try:
@@ -136,15 +136,15 @@ class DatadogExporter:
                 # List all dashboards
                 dashboard_list = api.list_dashboards()
 
-                # Filter VertiGuard dashboards
-                vertiguard_dashboards = [
+                # Filter detra dashboards
+                detra_dashboards = [
                     d for d in dashboard_list.dashboards
-                    if "VertiGuard" in d.title or "LLM Observability" in d.title
+                    if "detra" in d.title or "LLM Observability" in d.title
                 ]
 
                 dashboards_data = []
 
-                for dashboard_summary in vertiguard_dashboards:
+                for dashboard_summary in detra_dashboards:
                     # Get full dashboard details
                     dashboard = api.get_dashboard(dashboard_summary.id)
                     dashboard_dict = dashboard.to_dict()
@@ -168,7 +168,7 @@ class DatadogExporter:
             return []
 
     def export_slos(self) -> list:
-        """Export all VertiGuard SLOs."""
+        """Export all detra SLOs."""
         print("Exporting SLOs...")
 
         try:
@@ -176,7 +176,7 @@ class DatadogExporter:
                 api = ServiceLevelObjectivesApi(api_client)
 
                 # Get all SLOs
-                slos_response = api.list_slos(tags="source:vertiguard")
+                slos_response = api.list_slos(tags="source:detra")
 
                 slos_data = []
                 if hasattr(slos_response, 'data') and slos_response.data:
@@ -196,7 +196,7 @@ class DatadogExporter:
                     self.exported_files.append(filename)
                     print(f"  ✓ Exported {len(slos_data)} SLOs to {filename}")
                 else:
-                    print(f"  ℹ️  No SLOs found with tag 'source:vertiguard'")
+                    print(f"  ℹ️  No SLOs found with tag 'source:detra'")
 
                 return slos_data
 
@@ -251,13 +251,13 @@ class DatadogExporter:
         print(f"  ✓ Created summary file: {filename}")
 
         # Also create a README
-        readme_content = f"""# VertiGuard Datadog Configuration Export
+        readme_content = f"""# detra Datadog Configuration Export
 
 Export Date: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 ## Contents
 
-This directory contains exported Datadog configurations for VertiGuard:
+This directory contains exported Datadog configurations for detra:
 
 - **Monitors**: {len(monitors)} monitor(s)
 - **Dashboards**: {len(dashboards)} dashboard(s)
@@ -306,7 +306,7 @@ for dashboard in dashboards:
     api.create_dashboard(body=dashboard)
 ```
 
-## VertiGuard Organization
+## detra Organization
 
 Datadog Organization: `{os.getenv('DD_SITE', 'datadoghq.com')}`
 
@@ -314,17 +314,17 @@ Datadog Organization: `{os.getenv('DD_SITE', 'datadoghq.com')}`
 
 ### Monitor 1: Adherence Score Warning
 - **Type**: Metric Alert
-- **Query**: `avg(last_5m):avg:vertiguard.node.adherence_score{{*}} < 0.85`
+- **Query**: `avg(last_5m):avg:detra.node.adherence_score{{*}} < 0.85`
 - **Action**: Alert when LLM outputs fall below quality threshold
 
 ### Monitor 2: PII Detection
 - **Type**: Event Alert
-- **Query**: `sum(last_1m):sum:vertiguard.security.pii_detected{{*}} > 0`
+- **Query**: `sum(last_1m):sum:detra.security.pii_detected{{*}} > 0`
 - **Action**: Critical alert on PII exposure in LLM outputs
 
 ### Monitor 3: High Latency
 - **Type**: Metric Alert
-- **Query**: `avg(last_5m):avg:vertiguard.node.latency_ms{{*}} > 5000`
+- **Query**: `avg(last_5m):avg:detra.node.latency_ms{{*}} > 5000`
 - **Action**: Warn when LLM response times exceed threshold
 
 For full details, see the JSON configuration files.
@@ -342,7 +342,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Export Datadog configurations for VertiGuard"
+        description="Export Datadog configurations for detra"
     )
     parser.add_argument(
         "--output-dir",

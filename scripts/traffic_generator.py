@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VertiGuard Traffic Generator - Tests All Features
+Detra Traffic Generator - Tests All Features
 
 Generates comprehensive traffic exercising:
 1. LLM adherence monitoring
@@ -35,10 +35,10 @@ logger = structlog.get_logger()
 
 
 class TrafficGenerator:
-    """Comprehensive traffic generator testing all VertiGuard features."""
+    """Comprehensive traffic generator testing all Detra features."""
 
     def __init__(self, config_path: str, project_id: str, location: str = "us-central1"):
-        self.vg = vertiguard.init(config_path)
+        self.vg = detra.init(config_path)
         aiplatform.init(project=project_id, location=location)
         self.model = GenerativeModel("gemini-2.0-flash-exp")
 
@@ -56,7 +56,7 @@ class TrafficGenerator:
         }
 
     async def generate_traffic(self, num_requests: int = 50, delay: float = 2.0):
-        print(f"\nVertiGuard Traffic Generator")
+        print(f"\nDetra Traffic Generator")
         print(f"Requests: {num_requests}, Delay: {delay}s")
         print(f"Testing: LLM + Errors + Agents + Security + Performance\n")
 
@@ -206,7 +206,7 @@ class TrafficGenerator:
 
 async def main():
     import argparse
-    parser = argparse.ArgumentParser(description="VertiGuard traffic generator")
+    parser = argparse.ArgumentParser(description="Detra traffic generator")
     parser.add_argument("--config", default="examples/legal_analyzer/detra.yaml")
     parser.add_argument("--requests", type=int, default=50)
     parser.add_argument("--delay", type=float, default=2.0)

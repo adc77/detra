@@ -357,7 +357,7 @@ class ErrorTracker:
             # Submit metric
             await self.datadog.submit_metrics([
                 {
-                    "metric": "vertiguard.errors.count",
+                    "metric": "detra.errors.count",
                     "type": "count",
                     "points": [[int(datetime.now().timestamp()), 1]],
                     "tags": [

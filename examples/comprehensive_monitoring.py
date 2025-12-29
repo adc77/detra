@@ -2,14 +2,14 @@
 """
 Comprehensive Monitoring Example
 
-Demonstrates all VertiGuard monitoring capabilities:
+Demonstrates all detra monitoring capabilities:
 1. Traditional error tracking (Sentry-style)
 2. LLM prompt/output monitoring
 3. Agent behavior tracking (tool calls, decisions, workflows)
 4. Root cause analysis
 5. DSPy prompt optimization
 
-This shows VertiGuard as a complete observability solution.
+This shows detra as a complete observability solution.
 """
 
 import asyncio
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import google.genai as genai
 import structlog
 
-import vertiguard
+import detra
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -41,9 +41,9 @@ class CustomerSupportAgent:
     """
 
     def __init__(self, config_path: str):
-        """Initialize agent with VertiGuard."""
-        # Initialize VertiGuard
-        self.vg = vertiguard.init(config_path)
+        """Initialize agent with detra."""
+        # Initialize detra
+        self.vg = detra.init(config_path)
 
         # Initialize Gemini
         api_key = os.getenv("GOOGLE_API_KEY")
@@ -128,7 +128,7 @@ class CustomerSupportAgent:
     # EXAMPLE 2: LLM Monitoring (Prompt Quality)
     # =========================================================================
 
-    @vertiguard.trace("generate_response")
+    @detra.trace("generate_response")
     async def generate_support_response(
         self,
         customer_query: str,
@@ -154,7 +154,7 @@ Do not make up information or include personal data.
 
 Response:"""
 
-        # This is automatically traced and evaluated by VertiGuard
+        # This is automatically traced and evaluated by detra
         response = await self._call_llm(prompt)
 
         return response
@@ -292,7 +292,7 @@ Response:"""
             )
 
             # Use root cause analyzer
-            from vertiguard.optimization.root_cause import RootCauseAnalyzer
+            from detra.optimization.root_cause import RootCauseAnalyzer
 
             analyzer = RootCauseAnalyzer(
                 api_key=os.getenv("GOOGLE_API_KEY")
@@ -352,7 +352,7 @@ async def main():
 
     # Get config path
     script_dir = Path(__file__).parent
-    config_path = script_dir.parent / "examples" / "legal_analyzer" / "vertiguard.yaml"
+    config_path = script_dir.parent / "examples" / "legal_analyzer" / "detra.yaml"
 
     # Initialize agent
     agent = CustomerSupportAgent(str(config_path))

@@ -1,5 +1,5 @@
 """
-Comprehensive dashboard template showing ALL VertiGuard features.
+Comprehensive dashboard template showing ALL detra features.
 
 This dashboard includes:
 - LLM monitoring (adherence, latency, tokens)
@@ -32,7 +32,7 @@ def get_comprehensive_dashboard(
         Complete dashboard JSON.
     """
     dashboard = {
-        "title": f"VertiGuard: {app_name} - Complete Observability",
+        "title": f"detra: {app_name} - Complete Observability",
         "description": "Comprehensive monitoring: LLM + Errors + Agents + Security + Optimization",
         "layout_type": "ordered",
         "template_variables": [
@@ -58,7 +58,7 @@ def get_comprehensive_dashboard(
     dashboard["widgets"].extend([
         WidgetBuilder.query_value(
             "LLM Adherence Score",
-            "avg:vertiguard.node.adherence_score{*}",
+            "avg:detra.node.adherence_score{*}",
             conditional_formats=[
                 {"comparator": ">=", "value": 0.85, "palette": "white_on_green"},
                 {"comparator": ">=", "value": 0.70, "palette": "white_on_yellow"},
@@ -67,13 +67,13 @@ def get_comprehensive_dashboard(
         ),
         WidgetBuilder.query_value(
             "Error Rate",
-            "sum:vertiguard.errors.count{*}.as_rate()",
+            "sum:detra.errors.count{*}.as_rate()",
             unit="errors/min",
             precision=2,
         ),
         WidgetBuilder.query_value(
             "Active Workflows",
-            "sum:vertiguard.agent.workflow.steps{*}",
+            "sum:detra.agent.workflow.steps{*}",
             aggregator="sum",
         ),
     ])
@@ -93,7 +93,7 @@ def get_comprehensive_dashboard(
         # Adherence trend over time
         WidgetBuilder.timeseries(
             "Adherence Score by Node",
-            [{"q": "avg:vertiguard.node.adherence_score{*} by {node}", "display_type": "line"}],
+            [{"q": "avg:detra.node.adherence_score{*} by {node}", "display_type": "line"}],
             markers=[
                 {"value": "y = 0.85", "display_type": "warning dashed"},
                 {"value": "y = 0.70", "display_type": "error dashed"},
@@ -105,7 +105,7 @@ def get_comprehensive_dashboard(
         WidgetBuilder.timeseries(
             "Flag Rate %",
             [{
-                "q": "(sum:vertiguard.node.flagged{*}.as_count() / sum:vertiguard.node.calls{*}.as_count()) * 100",
+                "q": "(sum:detra.node.flagged{*}.as_count() / sum:detra.node.calls{*}.as_count()) * 100",
                 "display_type": "bars"
             }],
         ),
@@ -113,30 +113,30 @@ def get_comprehensive_dashboard(
         # Flags by category
         WidgetBuilder.toplist(
             "Flags by Category",
-            "sum:vertiguard.node.flagged{*} by {category}.as_count()",
+            "sum:detra.node.flagged{*} by {category}.as_count()",
             palette="warm",
         ),
 
         # LLM call volume
         WidgetBuilder.timeseries(
             "LLM Calls by Node",
-            [{"q": "sum:vertiguard.node.calls{*} by {node}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.node.calls{*} by {node}.as_count()", "display_type": "bars"}],
         ),
 
         # Latency distribution
         WidgetBuilder.timeseries(
             "Latency (P50, P95, P99)",
             [
-                {"q": "p50:vertiguard.node.latency_ms{*}", "display_type": "line"},
-                {"q": "p95:vertiguard.node.latency_ms{*}", "display_type": "line"},
-                {"q": "p99:vertiguard.node.latency_ms{*}", "display_type": "line"},
+                {"q": "p50:detra.node.latency_ms{*}", "display_type": "line"},
+                {"q": "p95:detra.node.latency_ms{*}", "display_type": "line"},
+                {"q": "p99:detra.node.latency_ms{*}", "display_type": "line"},
             ],
         ),
 
         # Token usage
         WidgetBuilder.timeseries(
             "Token Usage",
-            [{"q": "sum:vertiguard.eval.tokens_used{*}.as_count()", "display_type": "area"}],
+            [{"q": "sum:detra.eval.tokens_used{*}.as_count()", "display_type": "area"}],
         ),
     ])
 
@@ -155,33 +155,33 @@ def get_comprehensive_dashboard(
         # Error timeline
         WidgetBuilder.timeseries(
             "Errors Over Time",
-            [{"q": "sum:vertiguard.errors.count{*}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.errors.count{*}.as_count()", "display_type": "bars"}],
         ),
 
         # Errors by type
         WidgetBuilder.toplist(
             "Top Error Types",
-            "sum:vertiguard.errors.count{*} by {exception_type}.as_count()",
+            "sum:detra.errors.count{*} by {exception_type}.as_count()",
             palette="warm",
         ),
 
         # Error rate
         WidgetBuilder.query_value(
             "Error Rate (per minute)",
-            "sum:vertiguard.errors.count{*}.as_rate()",
+            "sum:detra.errors.count{*}.as_rate()",
             precision=2,
         ),
 
         # Unique errors
         WidgetBuilder.query_value(
             "Unique Error Groups",
-            "count_nonzero:vertiguard.errors.count{*} by {error_id}",
+            "count_nonzero:detra.errors.count{*} by {error_id}",
         ),
 
         # Errors by severity
         WidgetBuilder.toplist(
             "Errors by Level",
-            "sum:vertiguard.errors.count{*} by {level}.as_count()",
+            "sum:detra.errors.count{*} by {level}.as_count()",
         ),
     ])
 
@@ -201,39 +201,39 @@ def get_comprehensive_dashboard(
         WidgetBuilder.timeseries(
             "Agent Workflow Duration",
             [
-                {"q": "avg:vertiguard.agent.workflow.duration_ms{*} by {agent}", "display_type": "line"},
+                {"q": "avg:detra.agent.workflow.duration_ms{*} by {agent}", "display_type": "line"},
             ],
         ),
 
         # Workflow steps
         WidgetBuilder.timeseries(
             "Steps per Workflow",
-            [{"q": "avg:vertiguard.agent.workflow.steps{*} by {agent}", "display_type": "bars"}],
+            [{"q": "avg:detra.agent.workflow.steps{*} by {agent}", "display_type": "bars"}],
         ),
 
         # Tool calls
         WidgetBuilder.timeseries(
             "Tool Calls per Workflow",
-            [{"q": "avg:vertiguard.agent.tool_calls{*} by {agent}", "display_type": "bars"}],
+            [{"q": "avg:detra.agent.tool_calls{*} by {agent}", "display_type": "bars"}],
         ),
 
         # Workflow success rate
         WidgetBuilder.query_value(
             "Workflow Success Rate",
-            "(sum:vertiguard.agent.workflow.completed{*} / sum:vertiguard.agent.workflow.total{*}) * 100",
+            "(sum:detra.agent.workflow.completed{*} / sum:detra.agent.workflow.total{*}) * 100",
             unit="%",
         ),
 
         # Anomalies detected
         WidgetBuilder.timeseries(
             "Agent Anomalies Detected",
-            [{"q": "sum:vertiguard.agent.anomalies{*} by {anomaly_type}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.agent.anomalies{*} by {anomaly_type}.as_count()", "display_type": "bars"}],
         ),
 
         # Active workflows gauge
         WidgetBuilder.query_value(
             "Active Workflows",
-            "sum:vertiguard.agent.workflow.active{*}",
+            "sum:detra.agent.workflow.active{*}",
         ),
     ])
 
@@ -252,26 +252,26 @@ def get_comprehensive_dashboard(
         # PII detections
         WidgetBuilder.timeseries(
             "PII Detections",
-            [{"q": "sum:vertiguard.security.pii_detected{*} by {type}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.security.pii_detected{*} by {type}.as_count()", "display_type": "bars"}],
         ),
 
         # Injection attempts
         WidgetBuilder.timeseries(
             "Prompt Injection Attempts",
-            [{"q": "sum:vertiguard.security.injection_attempts{*}.as_count()", "display_type": "area"}],
+            [{"q": "sum:detra.security.injection_attempts{*}.as_count()", "display_type": "area"}],
         ),
 
         # Security issues by severity
         WidgetBuilder.toplist(
             "Security Issues by Severity",
-            "sum:vertiguard.security.issues{*} by {severity}.as_count()",
+            "sum:detra.security.issues{*} by {severity}.as_count()",
             palette="warm",
         ),
 
         # Security event stream
         WidgetBuilder.event_stream(
             "Recent Security Events",
-            "tags:source:vertiguard tags:category:security",
+            "tags:source:detra tags:category:security",
             size="l",
         ),
     ])
@@ -291,26 +291,26 @@ def get_comprehensive_dashboard(
         # Prompts optimized
         WidgetBuilder.timeseries(
             "Prompts Optimized (DSPy)",
-            [{"q": "sum:vertiguard.optimization.prompts_optimized{*}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.optimization.prompts_optimized{*}.as_count()", "display_type": "bars"}],
         ),
 
         # Root cause analyses
         WidgetBuilder.timeseries(
             "Root Cause Analyses Performed",
-            [{"q": "sum:vertiguard.optimization.root_causes_analyzed{*}.as_count()", "display_type": "bars"}],
+            [{"q": "sum:detra.optimization.root_causes_analyzed{*}.as_count()", "display_type": "bars"}],
         ),
 
         # Optimization confidence
         WidgetBuilder.query_value(
             "Avg Optimization Confidence",
-            "avg:vertiguard.optimization.confidence{*}",
+            "avg:detra.optimization.confidence{*}",
             precision=2,
         ),
 
         # Improvement success rate
         WidgetBuilder.query_value(
             "Optimization Success Rate",
-            "(sum:vertiguard.optimization.successful{*} / sum:vertiguard.optimization.total{*}) * 100",
+            "(sum:detra.optimization.successful{*} / sum:detra.optimization.total{*}) * 100",
             unit="%",
         ),
     ])
@@ -330,13 +330,13 @@ def get_comprehensive_dashboard(
         # Monitor summary
         WidgetBuilder.monitor_summary(
             "Monitor Status",
-            "status:(alert OR warn OR no data) source:vertiguard",
+            "status:(alert OR warn OR no data) source:detra",
         ),
 
         # Incident timeline
         WidgetBuilder.event_stream(
             "Recent Incidents",
-            "tags:source:vertiguard tags:alert_type:error",
+            "tags:source:detra tags:alert_type:error",
             size="l",
         ),
 

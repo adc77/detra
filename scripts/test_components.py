@@ -2,7 +2,7 @@
 """
 Component Testing Script
 
-Tests each VertiGuard module individually to verify it works.
+Tests each detra module individually to verify it works.
 
 Usage:
     python scripts/test_components.py --all
@@ -33,7 +33,7 @@ RESET = "\033[0m"
 
 
 class ComponentTester:
-    """Tests individual VertiGuard components."""
+    """Tests individual detra components."""
 
     def __init__(self):
         """Initialize tester."""
@@ -568,7 +568,7 @@ class ComponentTester:
                 return
 
             vg = detra.init(str(config_path))
-            self.print_test("VertiGuard init", "PASS")
+            self.print_test("detra init", "PASS")
 
             # Test components exist
             if hasattr(vg, 'error_tracker'):
@@ -610,7 +610,7 @@ async def main():
     """Run component tests."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Test VertiGuard components")
+    parser = argparse.ArgumentParser(description="Test detra components")
     parser.add_argument(
         "--component",
         choices=[
@@ -633,7 +633,7 @@ async def main():
     tester = ComponentTester()
 
     print(f"\n{BLUE}{'='*60}{RESET}")
-    print(f"{BLUE}VERTIGUARD COMPONENT TESTING{RESET}")
+    print(f"{BLUE}detra COMPONENT TESTING{RESET}")
     print(f"{BLUE}{'='*60}{RESET}\n")
 
     if args.all or args.component == "imports":

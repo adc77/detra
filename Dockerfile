@@ -1,4 +1,4 @@
-# Multi-stage build for VertiGuard example application
+# Multi-stage build for detra example application
 FROM python:3.11-slim as builder
 
 WORKDIR /app
