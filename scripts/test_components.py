@@ -456,7 +456,7 @@ class ComponentTester:
             from detra.config.schema import GeminiConfig, SecurityConfig, NodeConfig
 
             # Create engine
-            gemini_config = GeminiConfig(api_key=api_key, model="gemini-1.5-flash")
+            gemini_config = GeminiConfig(api_key=api_key, model="gemini-2.5-flash")
             security_config = SecurityConfig(pii_detection_enabled=True)
 
             judge = GeminiJudge(gemini_config)

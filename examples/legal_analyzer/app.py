@@ -71,10 +71,10 @@ class ComprehensiveLegalAnalyzer:
         # Initialize detra
         self.vg = detra.init(config_path)
 
-        # Initialize Gemini 2.0 Flash
+        # Initialize Gemini 2.5 Flash
         self.api_key = api_key
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.0-flash-exp"  # Latest model
+        self.model = "gemini-2.5-flash"  # Latest model
 
         # Initialize optimization components
         from detra.optimization.root_cause import RootCauseAnalyzer
@@ -643,7 +643,7 @@ class LegalAnalyzerTUI:
             )
 
             self.print_success("detra initialized")
-            self.print_success(f"Model: gemini-2.0-flash-exp")
+            self.print_success(f"Model: gemini-2.5-flash")
             self.print_success(f"DSPy enabled: {self.analyzer.dspy_optimizer.enabled}")
 
             # Setup monitors and dashboard

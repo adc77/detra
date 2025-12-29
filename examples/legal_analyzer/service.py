@@ -121,7 +121,7 @@ class WebSearchTool:
 class LegalAgent:
     """Legal AI Agent with detra observability."""
 
-    def __init__(self, vg, client, model: str = "gemini-2.0-flash-exp"):
+    def __init__(self, vg, client, model: str = "gemini-2.5-flash"):
         self.vg = vg
         self.client = client
         self.model = model
