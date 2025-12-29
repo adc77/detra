@@ -31,20 +31,21 @@ class WidgetBuilder:
         Returns:
             Widget definition.
         """
+        request = {"q": query}
+        if conditional_formats:
+            request["conditional_formats"] = conditional_formats
+
         widget = {
             "definition": {
                 "title": title,
                 "type": "query_value",
-                "requests": [{"q": query}],
+                "requests": [request],
                 "precision": precision,
             }
         }
 
         if unit:
             widget["definition"]["custom_unit"] = unit
-
-        if conditional_formats:
-            widget["definition"]["conditional_formats"] = conditional_formats
 
         if layout:
             widget["layout"] = layout
@@ -104,6 +105,7 @@ class WidgetBuilder:
         query: str,
         palette: str = "dog_classic",
         layout: Optional[dict[str, int]] = None,
+        limit: Optional[int] = None,
     ) -> dict[str, Any]:
         """
         Create a toplist widget.
@@ -113,15 +115,18 @@ class WidgetBuilder:
             query: Metric query.
             palette: Color palette.
             layout: Widget layout (x, y, width, height) for free layout dashboards.
+            limit: Ignored (use top() in query for limiting).
 
         Returns:
             Widget definition.
         """
+        request = {"q": query, "style": {"palette": palette}}
+
         widget = {
             "definition": {
                 "title": title,
                 "type": "toplist",
-                "requests": [{"q": query, "style": {"palette": palette}}],
+                "requests": [request],
             }
         }
 
@@ -205,7 +210,7 @@ class WidgetBuilder:
         Args:
             title: Group title.
             widgets: List of widgets to include.
-            layout_type: Layout type (ordered, horizontal).
+            layout_type: Layout type (ordered only - Datadog API constraint).
 
         Returns:
             Widget definition.

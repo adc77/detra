@@ -48,55 +48,56 @@ def get_comprehensive_dashboard(
     # ==========================================================================
 
     dashboard["widgets"].append(
-        WidgetBuilder.group(
-            "Executive Summary",
-            [
-                WidgetBuilder.query_value(
-                    "LLM Adherence Score",
-                    "avg:detra.node.adherence_score{$env,$node}",
-                    conditional_formats=[
-                        {"comparator": ">=", "value": 0.85, "palette": "white_on_green"},
-                        {"comparator": ">=", "value": 0.70, "palette": "white_on_yellow"},
-                        {"comparator": "<", "value": 0.70, "palette": "white_on_red"},
-                    ],
-                ),
-                WidgetBuilder.query_value(
-                    "Error Count (24h)",
-                    "sum:detra.errors.count{$env}.as_count()",
-                    conditional_formats=[
-                        {"comparator": "<=", "value": 5, "palette": "white_on_green"},
-                        {"comparator": "<=", "value": 20, "palette": "white_on_yellow"},
-                        {"comparator": ">", "value": 20, "palette": "white_on_red"},
-                    ],
-                ),
-                WidgetBuilder.query_value(
-                    "Flag Rate",
-                    "(sum:detra.node.flagged{$env}.as_count() / sum:detra.node.calls{$env}.as_count()) * 100",
-                    unit="%",
-                    precision=1,
-                ),
-                WidgetBuilder.query_value(
-                    "Avg Latency",
-                    "avg:detra.node.latency{$env}",
-                    precision=0,
-                    unit="ms",
-                ),
-                WidgetBuilder.query_value(
-                    "Active Workflows",
-                    "sum:detra.agent.workflow.active{$env}",
-                ),
-                WidgetBuilder.query_value(
-                    "Security Issues",
-                    "sum:detra.security.issues{$env}.as_count()",
-                    conditional_formats=[
-                        {"comparator": "==", "value": 0, "palette": "white_on_green"},
-                        {"comparator": ">", "value": 0, "palette": "white_on_red"},
-                    ],
-                ),
-            ],
-            layout_type="horizontal",
+        WidgetBuilder.note(
+            "## Executive Summary",
+            background_color="vivid_blue",
         )
     )
+
+    dashboard["widgets"].extend([
+        WidgetBuilder.query_value(
+            "LLM Adherence Score",
+            "avg:detra.node.adherence_score{$env,$node}",
+            conditional_formats=[
+                {"comparator": ">=", "value": 0.85, "palette": "white_on_green"},
+                {"comparator": ">=", "value": 0.70, "palette": "white_on_yellow"},
+                {"comparator": "<", "value": 0.70, "palette": "white_on_red"},
+            ],
+        ),
+        WidgetBuilder.query_value(
+            "Error Count (24h)",
+            "sum:detra.errors.count{$env}.as_count()",
+            conditional_formats=[
+                {"comparator": "<=", "value": 5, "palette": "white_on_green"},
+                {"comparator": "<=", "value": 20, "palette": "white_on_yellow"},
+                {"comparator": ">", "value": 20, "palette": "white_on_red"},
+            ],
+        ),
+        WidgetBuilder.query_value(
+            "Flag Rate",
+            "(sum:detra.node.flagged{$env}.as_count() / sum:detra.node.calls{$env}.as_count()) * 100",
+            unit="%",
+            precision=1,
+        ),
+        WidgetBuilder.query_value(
+            "Avg Latency",
+            "avg:detra.node.latency{$env}",
+            precision=0,
+            unit="ms",
+        ),
+        WidgetBuilder.query_value(
+            "Active Workflows",
+            "sum:detra.agent.workflow.active{$env}",
+        ),
+        WidgetBuilder.query_value(
+            "Security Issues",
+            "sum:detra.security.issues{$env}.as_count()",
+            conditional_formats=[
+                {"comparator": "<=", "value": 0, "palette": "white_on_green"},
+                {"comparator": ">", "value": 0, "palette": "white_on_red"},
+            ],
+        ),
+    ])
 
     # ==========================================================================
     # SECTION 2: LLM MONITORING
@@ -192,7 +193,7 @@ def get_comprehensive_dashboard(
         # Unique errors
         WidgetBuilder.query_value(
             "Unique Error Groups",
-            "count_nonzero:detra.errors.count{$env} by {error_id}",
+            "sum:detra.errors.unique{$env}",
         ),
 
         # Errors by level
@@ -351,37 +352,44 @@ def get_comprehensive_dashboard(
 
     dashboard["widgets"].extend([
         # Nodes needing attention (low adherence)
+        # Note: Shows highest adherence first (default toplist behavior)
+        # Review the list to identify nodes with low scores
         WidgetBuilder.toplist(
-            "Nodes with Low Adherence (Fix These)",
-            "bottom10:avg:detra.node.adherence_score{$env} by {node}",
+            "Adherence by Node",
+            "avg:detra.node.adherence_score{$env} by {node}",
             palette="warm",
+            limit=10,
         ),
 
         # High flag rate nodes
         WidgetBuilder.toplist(
             "High Flag Rate Nodes",
-            "top10:(sum:detra.node.flagged{$env} by {node}.as_count() / sum:detra.node.calls{$env} by {node}.as_count()) * 100",
+            "(sum:detra.node.flagged{$env} by {node}.as_count() / sum:detra.node.calls{$env} by {node}.as_count()) * 100",
             palette="warm",
+            limit=10,
         ),
 
         # Most common errors
         WidgetBuilder.toplist(
             "Most Frequent Errors",
-            "top10:sum:detra.errors.count{$env} by {exception_type}.as_count()",
+            "sum:detra.errors.count{$env} by {exception_type}.as_count()",
             palette="red",
+            limit=10,
         ),
 
         # Security hotspots
         WidgetBuilder.toplist(
             "Security Hotspots",
-            "top5:sum:detra.security.issues{$env} by {node}.as_count()",
+            "sum:detra.security.issues{$env} by {node}.as_count()",
             palette="orange",
+            limit=5,
         ),
 
         # Slow nodes
         WidgetBuilder.toplist(
             "Slowest Nodes (P95)",
-            "top10:p95:detra.node.latency{$env} by {node}",
+            "p95:detra.node.latency{$env} by {node}",
+            limit=10,
         ),
     ])
 
