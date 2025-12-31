@@ -259,8 +259,19 @@ JSON:
             text = text[:-3]
         try:
             return json.loads(text.strip())
-        except:
-            return {"error": "Invalid JSON", "raw": text[:300]}
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Failed to parse JSON from LLM response",
+                error=str(e),
+                position=e.pos,
+                raw_preview=text[:300],
+            )
+            return {
+                "error": "Invalid JSON",
+                "error_type": "JSONDecodeError",
+                "error_message": str(e),
+                "raw": text[:300],
+            }
 
 
 # =============================================================================

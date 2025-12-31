@@ -21,10 +21,7 @@ Usage:
 
 import argparse
 import asyncio
-import json
 import random
-import time
-from typing import Optional
 
 import httpx
 

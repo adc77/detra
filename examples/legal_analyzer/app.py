@@ -595,7 +595,7 @@ class LegalAnalyzerTUI:
 
         # Validate key
         try:
-            client = genai.Client(api_key=self.api_key)
+            genai.Client(api_key=self.api_key)
             self.print_success("API key validated successfully")
             return True
         except Exception as e:

@@ -1,15 +1,15 @@
-# VertiGuard Architecture
+# detra Architecture
 
-## 🎯 **What is VertiGuard?**
+## 🎯 **What is detra?**
 
-VertiGuard is a **Python library** (like Sentry, Langsmith, or pytest) that developers integrate into their AI applications.
+detra is a **Python library** (like Sentry, Langsmith, or pytest) that developers integrate into their AI applications.
 
-**VertiGuard is NOT:**
+**detra is NOT:**
 - ❌ A hosted SaaS service
 - ❌ A standalone application
 - ❌ Something you deploy separately
 
-**VertiGuard IS:**
+**detra IS:**
 - ✅ A pip-installable Python package
 - ✅ A library users import into their code
 - ✅ A drop-in observability solution
@@ -18,11 +18,11 @@ VertiGuard is a **Python library** (like Sentry, Langsmith, or pytest) that deve
 
 ## 📦 **Distribution Model**
 
-### How Users Get VertiGuard
+### How Users Get detra
 
 ```bash
 # Option 1: From PyPI (after publishing)
-pip install vertiguard
+pip install detra
 
 # Option 2: From GitHub
 pip install git+https://github.com/your-org/verti-guard.git
@@ -33,14 +33,14 @@ cd verti-guard
 pip install -e .
 ```
 
-### How Users Use VertiGuard
+### How Users Use detra
 
 ```python
 # In user's existing AI application
-import vertiguard
+import detra
 
 # Initialize with config
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # Add decorators to existing functions
 @vg.trace("my_llm_call")
@@ -56,7 +56,7 @@ workflow_id = vg.agent_monitor.start_workflow("my_agent")
 # ... existing agent code ...
 ```
 
-**Users deploy THEIR application** (with VertiGuard integrated), not VertiGuard itself.
+**Users deploy THEIR application** (with detra integrated), not detra itself.
 
 ---
 
@@ -72,7 +72,7 @@ workflow_id = vg.agent_monitor.start_workflow("my_agent")
 └─────────────────────────────────────────────────────────────┘
                             ↓ (imports)
 ┌─────────────────────────────────────────────────────────────┐
-│  VERTIGUARD LIBRARY (pip installed)                         │
+│  detra LIBRARY (pip installed)                         │
 │  ├─ Decorators (@vg.trace)                                  │
 │  ├─ Error tracker (vg.error_tracker)                        │
 │  ├─ Agent monitor (vg.agent_monitor)                        │
@@ -97,7 +97,7 @@ workflow_id = vg.agent_monitor.start_workflow("my_agent")
 ### What We Submit
 
 1. **GitHub Repository** (the library)
-   - Source code in `src/vertiguard/`
+   - Source code in `src/detra/`
    - Installation instructions
    - Documentation
    - Examples
@@ -105,28 +105,28 @@ workflow_id = vg.agent_monitor.start_workflow("my_agent")
 2. **Demo Application** (shows library in action)
    - Located in `examples/legal_analyzer/`
    - This is what we deploy to Railway/Render
-   - Shows judges how VertiGuard works
+   - Shows judges how detra works
 
 3. **Video** (walkthrough)
    - Demo of the legal analyzer app
-   - Shows VertiGuard catching errors, monitoring LLMs, tracking agents
+   - Shows detra catching errors, monitoring LLMs, tracking agents
    - Dashboard screenshots
 
 ### What Gets Hosted
 
-**ONLY the demo application** (`examples/legal_analyzer/`), not VertiGuard itself.
+**ONLY the demo application** (`examples/legal_analyzer/`), not detra itself.
 
 ```bash
 # What we deploy for the demo
 cd examples/legal_analyzer/
 railway up
 
-# This gives judges a URL to see VertiGuard in action
+# This gives judges a URL to see detra in action
 # https://legal-analyzer-demo.railway.app
 ```
 
 The demo app:
-- Uses VertiGuard (imports it)
+- Uses detra (imports it)
 - Processes legal documents
 - Shows all monitoring features
 - Sends telemetry to Datadog
@@ -137,12 +137,12 @@ The demo app:
 
 ### Step 1: User Installs Library
 ```bash
-pip install vertiguard
+pip install detra
 ```
 
 ### Step 2: User Creates Config
 ```yaml
-# vertiguard.yaml
+# detra.yaml
 app_name: my-ai-app
 datadog:
   api_key: ${DD_API_KEY}
@@ -155,9 +155,9 @@ nodes:
 
 ### Step 3: User Integrates
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 @vg.trace("my_llm_call")
 async def my_function():
@@ -172,7 +172,7 @@ python my_app.py  # User's application
 ### Step 5: User Views Datadog
 - User logs into THEIR Datadog account
 - Sees metrics, traces, errors from THEIR app
-- VertiGuard sends telemetry automatically
+- detra sends telemetry automatically
 
 ---
 
@@ -199,11 +199,11 @@ def my_llm_call():
     return llm.complete(prompt)
 ```
 
-### VertiGuard (Same Pattern)
+### detra (Same Pattern)
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("config.yaml")
+vg = detra.init("config.yaml")
 
 @vg.trace  # Library decorator
 def my_llm_call():
@@ -226,7 +226,7 @@ python -m build
 twine upload dist/*
 
 # Users install
-pip install vertiguard
+pip install detra
 ```
 
 ### Phase 3: Growth
@@ -239,16 +239,16 @@ pip install vertiguard
 
 ## 🎯 **Key Takeaway**
 
-**VertiGuard = pip-installable library**
+**detra = pip-installable library**
 
 Users integrate it into THEIR applications (FastAPI, Django, Jupyter notebooks, CLI tools, etc.).
 
-For the challenge, we host a **demo application** that uses VertiGuard, not VertiGuard itself.
+For the challenge, we host a **demo application** that uses detra, not detra itself.
 
 Think of it like:
 - **pytest**: Library users install to test code
 - **requests**: Library users install to make HTTP calls
-- **VertiGuard**: Library users install to monitor AI applications
+- **detra**: Library users install to monitor AI applications
 
 ---
 
@@ -256,7 +256,7 @@ Think of it like:
 
 ```
 verti-guard/
-├── src/vertiguard/          # The library (users pip install this)
+├── src/detra/          # The library (users pip install this)
 │   ├── __init__.py
 │   ├── client.py
 │   ├── errors/
@@ -266,7 +266,7 @@ verti-guard/
 ├── examples/                # Demo applications (we host one)
 │   └── legal_analyzer/      # THIS is what we deploy
 │       ├── app.py
-│       └── vertiguard.yaml
+│       └── detra.yaml
 │
 ├── tests/                   # Library tests
 ├── docs/                    # Documentation
@@ -281,10 +281,10 @@ verti-guard/
 |------------|-----------------|
 | Application URL | `https://legal-analyzer.railway.app` (demo app) |
 | GitHub Repo | `https://github.com/your-org/verti-guard` (library) |
-| Installation | `pip install vertiguard` or from GitHub |
-| Video | Shows demo app using VertiGuard |
+| Installation | `pip install detra` or from GitHub |
+| Video | Shows demo app using detra |
 | Datadog Configs | Exported from demo app's Datadog account |
 
 ---
 
-**The demo app proves VertiGuard works. Users then install VertiGuard into THEIR apps.**
+**The demo app proves detra works. Users then install detra into THEIR apps.**

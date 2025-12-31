@@ -541,7 +541,7 @@ class ComponentTester:
                 self.print_test("Injection detection", "FAIL", "Should detect injection")
 
             # Test Content Scanner
-            content_scanner = ContentScanner()
+            ContentScanner()
             self.print_test("ContentScanner creation", "PASS")
 
         except Exception as e:

@@ -1,11 +1,11 @@
 """Sentry-style error tracking for catching and monitoring all application errors."""
 
-import sys
 import traceback
 from typing import Any, Optional, Dict, List
 from datetime import datetime
 import hashlib
 import structlog
+import asyncio
 
 from detra.telemetry.datadog_client import DatadogClient
 from detra.errors.context import ErrorContext
@@ -196,7 +196,14 @@ class ErrorTracker:
             message_id=message_id,
         )
 
-        self._submit_to_datadog(error_context, message_id, level, tags)
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(self._submit_to_datadog(error_context, message_id, level, tags))
+            else:
+                loop.run_until_complete(self._submit_to_datadog(error_context, message_id, level, tags))
+        except Exception:
+            pass
 
         return message_id
 

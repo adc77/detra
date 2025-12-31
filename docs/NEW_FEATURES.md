@@ -1,8 +1,8 @@
-# VertiGuard - New Features
+# detra - New Features
 
 ## 🎯 **Complete Observability Solution**
 
-VertiGuard is now a **comprehensive monitoring platform** that handles:
+detra is now a **comprehensive monitoring platform** that handles:
 
 1. ✅ **Traditional Error Tracking** (like Sentry)
 2. ✅ **LLM Monitoring** (prompt/output quality)
@@ -23,9 +23,9 @@ Tracks **ALL application errors**, not just LLM-related ones:
 ### Usage Example
 
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # Set user context
 vg.error_tracker.set_user(
@@ -77,7 +77,7 @@ ValueError: File not found: /tmp/xyz789
 
 #### Datadog Integration
 - Creates Datadog Event for each error
-- Submits `vertiguard.errors.count` metric
+- Submits `detra.errors.count` metric
 - Creates incidents for critical/repeated errors
 - Full context in event description
 
@@ -109,9 +109,9 @@ Tracks **multi-step agent workflows** (ReAct, tool calls, decisions):
 ### Usage Example
 
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # Start tracking agent workflow
 workflow_id = vg.agent_monitor.start_workflow(
@@ -186,9 +186,9 @@ Automatically detects:
 - **Long-running workflows** (stuck agent)
 
 ### Datadog Integration
-- `vertiguard.agent.workflow.duration_ms` metric
-- `vertiguard.agent.workflow.steps` metric
-- `vertiguard.agent.tool_calls` metric
+- `detra.agent.workflow.duration_ms` metric
+- `detra.agent.workflow.steps` metric
+- `detra.agent.tool_calls` metric
 - Workflow completion events
 - Anomaly alerts
 
@@ -250,12 +250,12 @@ analysis = await vg.root_cause_analyzer.analyze_error(exception, context)
 
 ## 📦 **New Modules**
 
-### `vertiguard/errors/`
+### `detra/errors/`
 - **`tracker.py`**: Main error tracking class
 - **`context.py`**: Error context data structures
 - **`grouper.py`**: Error grouping and deduplication
 
-### `vertiguard/agents/`
+### `detra/agents/`
 - **`monitor.py`**: Agent workflow monitoring
 - **`workflow.py`**: Workflow graph and visualization
 - **`tools.py`**: Tool usage analytics
@@ -266,9 +266,9 @@ analysis = await vg.root_cause_analyzer.analyze_error(exception, context)
 
 ### 1. Error Tracking Only
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # All your code
 with vg.error_tracker.capture():
@@ -277,9 +277,9 @@ with vg.error_tracker.capture():
 
 ### 2. LLM Monitoring Only
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 @vg.trace("llm_call")
 async def my_llm_function():
@@ -288,9 +288,9 @@ async def my_llm_function():
 
 ### 3. Agent Monitoring Only
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 workflow_id = vg.agent_monitor.start_workflow("my_agent")
 # ... track steps ...
@@ -299,9 +299,9 @@ vg.agent_monitor.complete_workflow(workflow_id, output)
 
 ### 4. Everything Together
 ```python
-import vertiguard
+import detra
 
-vg = vertiguard.init("vertiguard.yaml")
+vg = detra.init("detra.yaml")
 
 # Track errors
 with vg.error_tracker.capture():
@@ -325,13 +325,13 @@ with vg.error_tracker.capture():
 ```
 Problem: "My LLM app crashed"
 Traditional: "Error 500" ❌
-VertiGuard (old): "Adherence score low" ✓
+detra (old): "Adherence score low" ✓
 ```
 
 ### After (Complete monitoring):
 ```
 Problem: "My LLM agent crashed"
-VertiGuard (new): "ValueError in database.py:45.
+detra (new): "ValueError in database.py:45.
 Agent made 15 tool calls (expected <10).
 3 database connection failures.
 Root cause: Connection pool exhausted.
@@ -351,16 +351,16 @@ Fix: Increase pool size in config/db.yaml" ✅✅✅
 ### New Metrics Added
 
 #### Error Tracking
-- `vertiguard.errors.count` - Total errors
-- `vertiguard.errors.unique` - Unique error types
-- `vertiguard.errors.by_type` - Errors by exception type
+- `detra.errors.count` - Total errors
+- `detra.errors.unique` - Unique error types
+- `detra.errors.by_type` - Errors by exception type
 
 #### Agent Monitoring
-- `vertiguard.agent.workflow.duration_ms` - Workflow duration
-- `vertiguard.agent.workflow.steps` - Steps per workflow
-- `vertiguard.agent.tool_calls` - Tool call count
-- `vertiguard.agent.tool.latency_ms` - Tool latency
-- `vertiguard.agent.anomalies` - Detected anomalies
+- `detra.agent.workflow.duration_ms` - Workflow duration
+- `detra.agent.workflow.steps` - Steps per workflow
+- `detra.agent.tool_calls` - Tool call count
+- `detra.agent.tool.latency_ms` - Tool latency
+- `detra.agent.anomalies` - Detected anomalies
 
 ---
 
@@ -427,4 +427,4 @@ For your video, now you can show:
 
 ---
 
-**This makes VertiGuard the most comprehensive AI observability platform! 🚀**
+**This makes detra the most comprehensive AI observability platform! 🚀**

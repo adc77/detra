@@ -11,7 +11,6 @@ Run: python scripts/export_datadog_configs.py
 """
 
 import argparse
-import asyncio
 import json
 import os
 import sys
@@ -202,7 +201,7 @@ class DatadogExporter:
                     slos_list = slos_response.data
 
                     # Filter for detra SLOs
-                    detra_slos = [s for s in slos_list if slo.name and "detra" in slo.name.lower()]
+                    detra_slos = [s for s in slos_list if s.name and "detra" in s.name.lower()]
 
                     for slo in detra_slos:
                         slos_data.append(slo.to_dict())

@@ -322,26 +322,25 @@ Response:"""
 
     # Helper methods
 
+    def _generate_content_sync(self, prompt: str) -> str:
+        """Synchronous helper to generate content and parse response."""
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        if hasattr(response, "text"):
+            return response.text
+        elif hasattr(response, "candidates") and response.candidates:
+            candidate = response.candidates[0]
+            if hasattr(candidate.content, "parts"):
+                parts = candidate.content.parts
+                if parts and hasattr(parts[0], "text"):
+                    return parts[0].text
+        return str(response)
+
     async def _call_llm(self, prompt: str) -> str:
         """Call Gemini API."""
-        loop = asyncio.get_event_loop()
-
-        def generate():
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            if hasattr(response, "text"):
-                return response.text
-            elif hasattr(response, "candidates") and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate.content, "parts"):
-                    parts = candidate.content.parts
-                    if parts and hasattr(parts[0], "text"):
-                        return parts[0].text
-            return str(response)
-
-        return await loop.run_in_executor(None, generate)
+        return await asyncio.to_thread(self._generate_content_sync, prompt)
 
 
 async def main():

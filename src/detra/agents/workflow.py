@@ -1,6 +1,6 @@
 """Workflow tracking and visualization for agent chains."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 import structlog
 
 logger = structlog.get_logger()

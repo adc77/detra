@@ -1,7 +1,8 @@
 """Error grouping and deduplication logic."""
 
 import hashlib
-from typing import Dict, List
+from typing import Dict, List, Any
+import re
 
 from detra.errors.context import ErrorContext
 
@@ -90,7 +91,6 @@ class ErrorGrouper:
             "File not found: /tmp/abc123" -> "File not found: /tmp/*"
             "Timeout after 5.3 seconds" -> "Timeout after * seconds"
         """
-        import re
 
         # Replace file paths
         message = re.sub(r'/[^\s]+', '/path/*', message)
@@ -112,7 +112,7 @@ class ErrorGrouper:
 
     def _get_stack_signature(
         self,
-        frames: List[Dict[str, any]]
+        frames: List[Dict[str, Any]]
     ) -> str:
         """
         Get a signature from the stack trace.
