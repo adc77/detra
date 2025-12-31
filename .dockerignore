@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Exports and data
+datadog_exports/
+*.log
+*.json
+
+# Environment
+.env
+.env.local
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+
+docs/
+
+datadog_exports/

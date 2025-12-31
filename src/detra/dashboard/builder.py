@@ -31,20 +31,21 @@ class WidgetBuilder:
         Returns:
             Widget definition.
         """
+        request = {"q": query}
+        if conditional_formats:
+            request["conditional_formats"] = conditional_formats
+
         widget = {
             "definition": {
                 "title": title,
                 "type": "query_value",
-                "requests": [{"q": query}],
+                "requests": [request],
                 "precision": precision,
             }
         }
 
         if unit:
             widget["definition"]["custom_unit"] = unit
-
-        if conditional_formats:
-            widget["definition"]["conditional_formats"] = conditional_formats
 
         if layout:
             widget["layout"] = layout
@@ -104,6 +105,7 @@ class WidgetBuilder:
         query: str,
         palette: str = "dog_classic",
         layout: Optional[dict[str, int]] = None,
+        limit: Optional[int] = None,
     ) -> dict[str, Any]:
         """
         Create a toplist widget.
@@ -113,15 +115,18 @@ class WidgetBuilder:
             query: Metric query.
             palette: Color palette.
             layout: Widget layout (x, y, width, height) for free layout dashboards.
+            limit: Ignored (use top() in query for limiting).
 
         Returns:
             Widget definition.
         """
+        request = {"q": query, "style": {"palette": palette}}
+
         widget = {
             "definition": {
                 "title": title,
                 "type": "toplist",
-                "requests": [{"q": query, "style": {"palette": palette}}],
+                "requests": [request],
             }
         }
 
@@ -205,7 +210,7 @@ class WidgetBuilder:
         Args:
             title: Group title.
             widgets: List of widgets to include.
-            layout_type: Layout type (ordered, horizontal).
+            layout_type: Layout type (ordered only - Datadog API constraint).
 
         Returns:
             Widget definition.
@@ -387,7 +392,7 @@ class DashboardBuilder:
             Configured DashboardBuilder.
         """
         builder = cls(
-            title=f"detra: {app_name} LLM Observability",
+            title=f"Detra: {app_name} - LLM Observability",
             description="End-to-end LLM observability dashboard",
         )
 
@@ -405,7 +410,7 @@ class DashboardBuilder:
                     {"comparator": ">=", "value": 0.70, "palette": "white_on_yellow"},
                     {"comparator": "<", "value": 0.70, "palette": "white_on_red"},
                 ],
-                layout={"x": 0, "y": 0, "width": 6, "height": 2},
+                layout={"x": 0, "y": 0, "width": 4, "height": 2},
             )
         )
         builder.add_widget(
@@ -414,7 +419,14 @@ class DashboardBuilder:
                 "sum:detra.node.flagged{*}.as_count() / sum:detra.node.calls{*}.as_count() * 100",
                 unit="%",
                 precision=1,
-                layout={"x": 6, "y": 0, "width": 6, "height": 2},
+                layout={"x": 4, "y": 0, "width": 4, "height": 2},
+            )
+        )
+        builder.add_widget(
+            WidgetBuilder.query_value(
+                "Error Count",
+                "sum:detra.errors.count{*}.as_count()",
+                layout={"x": 8, "y": 0, "width": 4, "height": 2},
             )
         )
 
@@ -432,13 +444,22 @@ class DashboardBuilder:
             )
         )
 
+        # Add errors over time
+        builder.add_widget(
+            WidgetBuilder.timeseries(
+                "Errors Over Time",
+                [{"q": "sum:detra.errors.count{*}.as_count()", "display_type": "bars"}],
+                layout={"x": 0, "y": 5, "width": 6, "height": 3},
+            )
+        )
+
         # Add flag analysis
         builder.add_widget(
             WidgetBuilder.toplist(
                 "Flags by Category",
                 "sum:detra.node.flagged{*} by {category}.as_count()",
                 palette="warm",
-                layout={"x": 0, "y": 5, "width": 6, "height": 3},
+                layout={"x": 6, "y": 5, "width": 6, "height": 3},
             )
         )
 
@@ -447,7 +468,7 @@ class DashboardBuilder:
             WidgetBuilder.timeseries(
                 "Call Volume",
                 [{"q": "sum:detra.node.calls{*} by {node}.as_count()", "display_type": "bars"}],
-                layout={"x": 6, "y": 5, "width": 6, "height": 3},
+                layout={"x": 0, "y": 8, "width": 12, "height": 3},
             )
         )
 

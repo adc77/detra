@@ -433,6 +433,47 @@ class DatadogClient:
                 "url": response.url,
             }
 
+    async def list_dashboards(self, title_filter: Optional[str] = None) -> list[dict]:
+        """
+        List existing dashboards.
+        
+        Args:
+            title_filter: Optional title filter (partial match).
+            
+        Returns:
+            List of dashboard info dicts with id, title, and url.
+        """
+        try:
+            return await self._run_sync(self._list_dashboards_sync, title_filter)
+        except Exception as e:
+            logger.error("Failed to list dashboards", error=str(e))
+            return []
+
+    def _list_dashboards_sync(self, title_filter: Optional[str]) -> list[dict]:
+        """Synchronous implementation of dashboard listing."""
+        with ApiClient(self.configuration) as api_client:
+            api = DashboardsApi(api_client)
+
+            # List all dashboards
+            response = api.list_dashboards()
+            
+            dashboards = []
+            for dashboard in response.dashboards:
+                dashboard_info = {
+                    "id": dashboard.id,
+                    "title": dashboard.title,
+                    "url": dashboard.url if hasattr(dashboard, "url") else None,
+                }
+                
+                # Filter by title if provided
+                if title_filter:
+                    if title_filter.lower() in dashboard.title.lower():
+                        dashboards.append(dashboard_info)
+                else:
+                    dashboards.append(dashboard_info)
+            
+            return dashboards
+
     # =========================================================================
     # INCIDENTS
     # =========================================================================

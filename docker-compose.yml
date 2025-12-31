@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  detra-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: detra-legal-analyzer
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_APP_KEY=${DD_APP_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    volumes:
+      - ./examples/legal_analyzer/detra.yaml:/app/examples/legal_analyzer/detra.yaml:ro
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  traffic-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: detra-traffic-gen
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_APP_KEY=${DD_APP_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    command: ["python", "/app/scripts/traffic_generator.py", "--requests", "100", "--delay", "3"]
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./examples/legal_analyzer/detra.yaml:/app/examples/legal_analyzer/detra.yaml:ro
+    depends_on:
+      - detra-demo
+    profiles:
+      - testing

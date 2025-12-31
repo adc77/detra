@@ -20,40 +20,30 @@ logger = structlog.get_logger()
 
 
 class LLMObsBridge:
-    """
-    Wrapper around ddtrace LLMObs for detra integration.
-
-    Provides a clean interface for LLM Observability operations
-    including span management, annotations, and evaluations.
-    """
+    """Wrapper around ddtrace LLMObs for detra integration."""
 
     def __init__(self, config: detraConfig):
-        """
-        Initialize the LLMObs bridge.
-
-        Args:
-            config: detra configuration.
-        """
+        """Initialize the LLMObs bridge."""
         self.config = config
         self._enabled = False
 
     def enable(self) -> None:
-        """Enable LLM Observability."""
+        """Enable LLM Observability in agentless mode."""
         if self._enabled:
             return
 
         try:
-            # Configure SSL for ddtrace
             self._configure_ssl()
 
-            # Set environment variables for ddtrace
+            site = self.config.datadog.site or "datadoghq.com"
+
             os.environ.setdefault("DD_API_KEY", self.config.datadog.api_key)
-            os.environ.setdefault("DD_SITE", self.config.datadog.site)
+            os.environ.setdefault("DD_SITE", site)
             os.environ.setdefault("DD_LLMOBS_ENABLED", "1")
             os.environ.setdefault("DD_LLMOBS_ML_APP", self.config.app_name)
             os.environ.setdefault("DD_LLMOBS_AGENTLESS_ENABLED", "1")
-            # Disable local agent for regular traces (we're using agentless mode)
-            os.environ.setdefault("DD_TRACE_AGENT_URL", "")
+            os.environ.setdefault("DD_TRACE_ENABLED", "false")
+            os.environ.setdefault("DD_INSTRUMENTATION_TELEMETRY_ENABLED", "false")
             os.environ.setdefault("DD_AGENT_HOST", "")
 
             if self.config.datadog.env:
@@ -66,18 +56,19 @@ class LLMObsBridge:
             LLMObs.enable(
                 ml_app=self.config.app_name,
                 api_key=self.config.datadog.api_key,
-                site=self.config.datadog.site,
+                site=site,
                 agentless_enabled=True,
                 env=self.config.datadog.env or self.config.environment.value,
                 service=self.config.datadog.service,
-                integrations_enabled=True,
+                integrations_enabled=False,
             )
 
             self._enabled = True
             logger.info(
                 "LLM Observability enabled",
                 app_name=self.config.app_name,
-                site=self.config.datadog.site,
+                site=site,
+                mode="agentless",
             )
 
         except Exception as e:
@@ -87,13 +78,9 @@ class LLMObsBridge:
     def _configure_ssl(self) -> None:
         """Configure SSL context for ddtrace HTTP connections."""
         if not self.config.datadog.verify_ssl:
-            # Disable SSL verification (development only)
-            # Note: ddtrace doesn't directly support this,
-            # but we can set a default unverified context
             ssl._create_default_https_context = ssl._create_unverified_context
-            logger.warning("SSL verification disabled for ddtrace - not recommended for production")
+            logger.warning("SSL verification disabled - not recommended for production")
         elif CERTIFI_AVAILABLE:
-            # Configure default SSL context to use certifi certificates
             try:
                 cert_path = certifi.where()
                 def create_context():
@@ -103,7 +90,6 @@ class LLMObsBridge:
             except Exception as e:
                 logger.warning("Failed to configure SSL context with certifi", error=str(e))
         elif self.config.datadog.ssl_cert_path:
-            # Use custom certificate path
             try:
                 cert_path = self.config.datadog.ssl_cert_path
                 def create_context():
@@ -113,9 +99,7 @@ class LLMObsBridge:
             except Exception as e:
                 logger.warning("Failed to configure SSL context with custom certificate", error=str(e))
         else:
-            logger.warning(
-                "No SSL certificate bundle specified for ddtrace. Install 'certifi' package for better compatibility."
-            )
+            logger.warning("No SSL certificate bundle specified. Install 'certifi' for better compatibility.")
 
     def disable(self) -> None:
         """Disable and flush LLM Observability."""
@@ -139,16 +123,7 @@ class LLMObsBridge:
         metadata: Optional[dict[str, Any]] = None,
         tags: Optional[dict[str, str]] = None,
     ) -> None:
-        """
-        Annotate a span with input/output data.
-
-        Args:
-            span: Span to annotate (current span if None).
-            input_data: Input data to record.
-            output_data: Output data to record.
-            metadata: Additional metadata.
-            tags: Additional tags.
-        """
+        """Annotate a span with input/output data."""
         try:
             LLMObs.annotate(
                 span=span,
@@ -168,16 +143,7 @@ class LLMObsBridge:
         value: Optional[Any] = None,
         tags: Optional[dict[str, str]] = None,
     ) -> None:
-        """
-        Submit an evaluation metric for a span.
-
-        Args:
-            span: Span to evaluate (current span if None).
-            label: Evaluation label.
-            metric_type: Type of metric (score, categorical).
-            value: Metric value.
-            tags: Additional tags.
-        """
+        """Submit an evaluation metric for a span."""
         try:
             LLMObs.submit_evaluation(
                 span=span,
@@ -192,32 +158,14 @@ class LLMObsBridge:
     @staticmethod
     @contextmanager
     def workflow(name: str):
-        """
-        Create a workflow span context manager.
-
-        Args:
-            name: Workflow name.
-
-        Yields:
-            The workflow span.
-        """
+        """Create a workflow span context manager."""
         with LLMObs.workflow(name) as span:
             yield span
 
     @staticmethod
     @contextmanager
     def llm(model_name: str, name: Optional[str] = None, model_provider: Optional[str] = None):
-        """
-        Create an LLM span context manager.
-
-        Args:
-            model_name: Name of the LLM model.
-            name: Span name.
-            model_provider: Model provider name.
-
-        Yields:
-            The LLM span.
-        """
+        """Create an LLM span context manager."""
         with LLMObs.llm(
             model_name=model_name,
             name=name,
@@ -228,30 +176,14 @@ class LLMObsBridge:
     @staticmethod
     @contextmanager
     def task(name: str):
-        """
-        Create a task span context manager.
-
-        Args:
-            name: Task name.
-
-        Yields:
-            The task span.
-        """
+        """Create a task span context manager."""
         with LLMObs.task(name) as span:
             yield span
 
     @staticmethod
     @contextmanager
     def agent(name: str):
-        """
-        Create an agent span context manager.
-
-        Args:
-            name: Agent name.
-
-        Yields:
-            The agent span.
-        """
+        """Create an agent span context manager."""
         with LLMObs.agent(name) as span:
             yield span
 
@@ -265,15 +197,7 @@ class LLMObsBridge:
 
     @staticmethod
     def export_span(span: Optional[Any] = None) -> Optional[dict]:
-        """
-        Export span context for distributed tracing.
-
-        Args:
-            span: Span to export (current span if None).
-
-        Returns:
-            Span context dictionary.
-        """
+        """Export span context for distributed tracing."""
         try:
             return LLMObs.export_span(span=span)
         except Exception as e:

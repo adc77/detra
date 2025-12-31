@@ -116,7 +116,7 @@ Configure notifications via:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/adc77/detra.git
 cd detra
 
 # Install dependencies
@@ -124,6 +124,12 @@ pip install -e .
 
 # Or install with dev dependencies
 pip install -e ".[dev]"
+
+# Or install with server dependencies (for FastAPI/uvicorn demos)
+pip install -e ".[server]"
+
+# Or install with all optional dependencies
+pip install -e ".[dev,server,optimization]"
 ```
 
 ### Dependencies
@@ -135,6 +141,11 @@ Core dependencies:
 - `pydantic>=2.5.0` - Configuration validation
 - `httpx>=0.26.0` - HTTP client for notifications
 - `structlog>=24.1.0` - Structured logging
+
+Optional dependencies:
+- `[server]` - FastAPI and uvicorn (for web service demos)
+- `[dev]` - Development tools (pytest, ruff, mypy)
+- `[optimization]` - DSPy for prompt optimization
 
 ## Setup and Configuration
 
@@ -571,7 +582,12 @@ See `examples/legal_analyzer/` for a complete example application.
 
 ### Running the Example
 
+#### Option 1: Interactive Demo
+
 ```bash
+# First, install with server dependencies for the FastAPI demo
+pip install -e ".[server]"
+
 cd examples/legal_analyzer
 
 # Set environment variables
@@ -579,12 +595,32 @@ export DD_API_KEY=your_key
 export DD_APP_KEY=your_key
 export GOOGLE_API_KEY=your_key
 
-# Run the demo
+# Run the interactive demo
 python app.py
 
 # Or run in interactive mode
 python app.py --interactive
 ```
+
+#### Option 2: FastAPI Service with Traffic Generator
+
+```bash
+# First, install with server dependencies
+pip install -e ".[server]"
+
+# Set environment variables
+export DD_API_KEY=your_key
+export DD_APP_KEY=your_key
+export GOOGLE_API_KEY=your_key
+
+# Terminal 1: Start the FastAPI service
+python3 -m uvicorn examples.legal_analyzer.service:app --reload --port 8000
+
+# Terminal 2: Generate traffic to test all detra features
+python3 scripts/traffic_generator.py --url http://localhost:8000 --requests 20 --delay 2
+```
+
+For detailed information about the traffic generator, what metrics it generates, and what you'll see in the Datadog dashboard, see [Traffic Generator Documentation](docs/TRAFFIC_GENERATOR.md).
 
 The example demonstrates:
 - Entity extraction from legal documents
