@@ -112,6 +112,19 @@ Configure notifications via:
 - Datadog account with API key and Application key
 - Google API key for Gemini evaluation (optional but recommended)
 
+### Install from PyPI
+
+```bash
+# Basic installation
+pip install detra
+
+# With optional dependencies
+pip install detra[server]        # FastAPI/uvicorn support
+pip install detra[dev]          # Development tools
+pip install detra[optimization] # DSPy optimization
+pip install detra[all]          # All optional dependencies
+```
+
 ### Install from Source
 
 ```bash
@@ -739,7 +752,7 @@ structlog.configure(
 
 ## License
 
-[Add license information here]
+MIT License
 
 ## Support
 

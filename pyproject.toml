@@ -2,8 +2,41 @@
 name = "detra"
 version = "0.1.0"
 description = "End-to-end LLM observability for vertical AI applications with Datadog"
-readme = "README.md"
-requires-python = ">=3.10"
+readme = "README_PYPI.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "detra Contributors"},
+]
+keywords = [
+    "llm",
+    "observability",
+    "monitoring",
+    "datadog",
+    "ai",
+    "ml",
+    "tracing",
+    "evaluation",
+    "security",
+    "vertical-ai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Logging",
+]
+
 dependencies = [
     "ddtrace>=2.10.0",
     "datadog-api-client>=2.20.0",
@@ -20,6 +53,12 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "certifi>=2024.2.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/adc77/detra"
+Repository = "https://github.com/adc77/detra"
+Documentation = "https://github.com/adc77/detra#readme"
+Issues = "https://github.com/adc77/detra/issues"
 
 [project.optional-dependencies]
 server = [
