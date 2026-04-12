@@ -1,7 +1,7 @@
 [project]
 name = "detra"
-version = "0.1.0"
-description = "End-to-end LLM observability for vertical AI applications with Datadog"
+version = "0.2.0"
+description = "LLM guardrails & observability -- pluggable backends, any-model evaluation"
 readme = "README_PYPI.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -11,14 +11,13 @@ authors = [
 keywords = [
     "llm",
     "observability",
-    "monitoring",
+    "guardrails",
+    "evaluation",
+    "opentelemetry",
     "datadog",
     "ai",
-    "ml",
     "tracing",
-    "evaluation",
     "security",
-    "vertical-ai",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -27,31 +26,24 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: System :: Monitoring",
-    "Topic :: System :: Logging",
 ]
 
+# ---------------------------------------------------------------------------
+# Core deps -- intentionally minimal.  Vendor-specific packages live in extras.
+# ---------------------------------------------------------------------------
 dependencies = [
-    "ddtrace>=2.10.0",
-    "datadog-api-client>=2.20.0",
-    "datadog>=0.49.0",
-    "google-genai>=0.2.0",
-    "google-cloud-aiplatform>=1.40.0",
-    "tiktoken>=0.5.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "pyyaml>=6.0.1",
-    "httpx>=0.26.0",
     "structlog>=24.1.0",
-    "tenacity>=8.2.0",
     "python-dotenv>=1.0.0",
-    "certifi>=2024.2.2",
+    "httpx>=0.26.0",
 ]
 
 [project.urls]
@@ -60,7 +52,31 @@ Repository = "https://github.com/adc77/detra"
 Documentation = "https://github.com/adc77/detra#readme"
 Issues = "https://github.com/adc77/detra/issues"
 
+# ---------------------------------------------------------------------------
+# Optional extras -- install only what you need
+# ---------------------------------------------------------------------------
 [project.optional-dependencies]
+otel = [
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+]
+datadog = [
+    "ddtrace>=2.10.0",
+    "datadog-api-client>=2.20.0",
+    "datadog>=0.49.0",
+    "certifi>=2024.2.2",
+]
+gemini = [
+    "google-genai>=0.2.0",
+    "tiktoken>=0.5.0",
+    "tenacity>=8.2.0",
+]
+litellm = [
+    "litellm>=1.0.0",
+]
+optimization = [
+    "dspy-ai>=2.4.0",
+]
 server = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -72,16 +88,8 @@ dev = [
     "ruff>=0.2.0",
     "mypy>=1.8.0",
 ]
-optimization = [
-    "dspy-ai>=2.4.0",  # For prompt optimization
-]
 all = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.1.0",
-    "ruff>=0.2.0",
-    "mypy>=1.8.0",
-    "dspy-ai>=2.4.0",
+    "detra[otel,datadog,gemini,litellm,optimization,server,dev]",
 ]
 
 [build-system]
@@ -93,7 +101,7 @@ packages = ["src/detra"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
@@ -105,7 +113,7 @@ testpaths = ["tests"]
 addopts = "-v --tb=short"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
