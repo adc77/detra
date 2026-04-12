@@ -4,8 +4,12 @@ import asyncio
 import json
 from typing import Any, Optional
 
-import google.genai as genai
 import structlog
+
+try:
+    import google.genai as genai
+except ImportError:
+    genai = None  # type: ignore[assignment]
 
 logger = structlog.get_logger()
 

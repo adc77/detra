@@ -6,7 +6,13 @@ from contextlib import contextmanager
 from typing import Any, Optional
 
 import structlog
-from ddtrace.llmobs import LLMObs
+
+try:
+    from ddtrace.llmobs import LLMObs
+    _DDTRACE_AVAILABLE = True
+except ImportError:
+    LLMObs = None  # type: ignore[assignment,misc]
+    _DDTRACE_AVAILABLE = False
 
 from detra.config.schema import detraConfig
 
@@ -31,6 +37,10 @@ class LLMObsBridge:
         """Enable LLM Observability in agentless mode."""
         if self._enabled:
             return
+        if not _DDTRACE_AVAILABLE:
+            raise ImportError(
+                "ddtrace required for LLMObsBridge.  Install with: pip install detra[datadog]"
+            )
 
         try:
             self._configure_ssl()
