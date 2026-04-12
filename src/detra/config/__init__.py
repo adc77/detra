@@ -1,6 +1,8 @@
 """Configuration management for detra."""
 
 from detra.config.schema import (
+    DetraConfig,
+    DetraSettings,
     detraConfig,
     detraSettings,
     DatadogConfig,
@@ -11,7 +13,10 @@ from detra.config.schema import (
     IntegrationsConfig,
     AlertConfig,
     Environment,
-    EvalModel,
+    BackendType,
+    JudgeProvider,
+    SamplingConfig,
+    JudgeConfig,
 )
 from detra.config.loader import (
     load_config,
@@ -22,6 +27,8 @@ from detra.config.loader import (
 from detra.config.defaults import DEFAULT_THRESHOLDS, DEFAULT_SECURITY_CONFIG
 
 __all__ = [
+    "DetraConfig",
+    "DetraSettings",
     "detraConfig",
     "detraSettings",
     "DatadogConfig",
@@ -32,7 +39,10 @@ __all__ = [
     "IntegrationsConfig",
     "AlertConfig",
     "Environment",
-    "EvalModel",
+    "BackendType",
+    "JudgeProvider",
+    "SamplingConfig",
+    "JudgeConfig",
     "load_config",
     "get_config",
     "set_config",
