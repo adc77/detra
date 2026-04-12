@@ -1,17 +1,22 @@
 """Trace decorators for detra."""
 
 from detra.decorators.trace import (
-    detraTrace,
+    DetraTrace,
     trace,
     workflow,
     llm,
     task,
     agent,
     set_evaluation_engine,
-    set_datadog_client,
+    set_backend,
+    set_sampling_config,
 )
 
+# Backward compat
+detraTrace = DetraTrace
+
 __all__ = [
+    "DetraTrace",
     "detraTrace",
     "trace",
     "workflow",
@@ -19,5 +24,6 @@ __all__ = [
     "task",
     "agent",
     "set_evaluation_engine",
-    "set_datadog_client",
+    "set_backend",
+    "set_sampling_config",
 ]
