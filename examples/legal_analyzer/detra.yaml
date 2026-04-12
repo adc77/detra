@@ -3,6 +3,30 @@ app_name: legal-ai-agent
 version: "1.0.0"
 environment: production
 
+# ── v0.2 pluggable architecture ──────────────────────────────────────────
+# Backend: where telemetry goes.  auto | console | otel | datadog
+# "auto" tries Datadog if keys are present, falls back to console.
+backend: auto
+
+# Judge: which LLM evaluates outputs against the behavior spec below.
+# Requires: pip install detra[litellm]
+# Set provider to "none" for rules-only mode (no LLM eval).
+judge_config:
+  provider: litellm
+  model: gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 1024
+
+# Sampling: in production you rarely need to evaluate every request.
+sampling:
+  rate: 0.1                  # evaluate 10% of requests
+  always_sample_errors: true
+  always_sample_flagged: true
+
+# ── Legacy provider configs (still work, auto-detected) ──────────────────
+# If you have DD keys in env and ddtrace installed, backend resolves to DD.
+# If you have a Gemini key and no judge_config, GeminiJudge is used.
+
 # Datadog configuration
 datadog:
   api_key: ${DD_API_KEY}
