@@ -73,6 +73,14 @@ class GeminiConfig(BaseModel):
     temperature: float = Field(default=0.1, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1024, ge=1, le=8192)
 
+    @field_validator("api_key", mode="before")
+    @classmethod
+    def _resolve_api_key(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            return v
+        import os
+        return os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+
 
 class NodeConfig(BaseModel):
     """Configuration for a traced node (function / workflow)."""
