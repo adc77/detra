@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import ssl
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
@@ -69,6 +68,12 @@ class DatadogClient:
 
         self._base_tags = self._build_base_tags()
         self._executor = ThreadPoolExecutor(max_workers=4)
+        self._metrics_api = None
+        self._events_api = None
+        self._monitors_api = None
+        self._dashboards_api = None
+        self._incidents_api = None
+        self._service_checks_api = None
 
     def _configure_ssl(self) -> None:
         """Configure SSL certificate verification."""
@@ -164,8 +169,7 @@ class DatadogClient:
         import time
 
         with ApiClient(self.configuration) as api_client:
-            api = MetricsApi(api_client)
-
+            api = self._metrics_api or MetricsApi(api_client)
             series = []
             for m in metrics:
                 tags = self._base_tags + m.get("tags", [])
@@ -287,8 +291,7 @@ class DatadogClient:
     ) -> Optional[dict]:
         """Synchronous implementation of event submission."""
         with ApiClient(self.configuration) as api_client:
-            api = EventsApi(api_client)
-
+            api = self._events_api or EventsApi(api_client)
             body = EventCreateRequest(
                 title=title,
                 text=text,
@@ -300,6 +303,9 @@ class DatadogClient:
             )
 
             response = api.create_event(body=body)
+            if isinstance(response, dict):
+                event = response.get("event", {})
+                return {"id": event.get("id"), "url": event.get("url")}
             logger.info("Event submitted", title=title, event_id=response.event.id)
             return {"id": response.event.id, "url": response.event.url}
 
@@ -359,8 +365,7 @@ class DatadogClient:
     ) -> Optional[dict]:
         """Synchronous implementation of monitor creation."""
         with ApiClient(self.configuration) as api_client:
-            api = MonitorsApi(api_client)
-
+            api = self._monitors_api or MonitorsApi(api_client)
             options = {"thresholds": thresholds or {"critical": 1}}
             # Note: priority is not a valid monitor option in Datadog API
             # Removed to avoid API errors
@@ -389,7 +394,7 @@ class DatadogClient:
     def _list_monitors_sync(self, name_filter: Optional[str]) -> list[dict]:
         """Synchronous implementation of monitor listing."""
         with ApiClient(self.configuration) as api_client:
-            api = MonitorsApi(api_client)
+            api = self._monitors_api or MonitorsApi(api_client)
 
             kwargs = {}
             if name_filter:
@@ -423,8 +428,7 @@ class DatadogClient:
     def _create_dashboard_sync(self, dashboard_definition: dict) -> Optional[dict]:
         """Synchronous implementation of dashboard creation."""
         with ApiClient(self.configuration) as api_client:
-            api = DashboardsApi(api_client)
-
+            api = self._dashboards_api or DashboardsApi(api_client)
             response = api.create_dashboard(body=dashboard_definition)
             logger.info("Dashboard created", title=response.title, id=response.id)
             return {
@@ -452,7 +456,7 @@ class DatadogClient:
     def _list_dashboards_sync(self, title_filter: Optional[str]) -> list[dict]:
         """Synchronous implementation of dashboard listing."""
         with ApiClient(self.configuration) as api_client:
-            api = DashboardsApi(api_client)
+            api = self._dashboards_api or DashboardsApi(api_client)
 
             # List all dashboards
             response = api.list_dashboards()
@@ -508,8 +512,7 @@ class DatadogClient:
     ) -> Optional[dict]:
         """Synchronous implementation of incident creation."""
         with ApiClient(self.configuration) as api_client:
-            api = IncidentsApi(api_client)
-
+            api = self._incidents_api or IncidentsApi(api_client)
             body = IncidentCreateRequest(
                 data=IncidentCreateData(
                     type=IncidentType("incidents"),
@@ -564,8 +567,7 @@ class DatadogClient:
     ) -> bool:
         """Synchronous implementation of service check submission."""
         with ApiClient(self.configuration) as api_client:
-            api = ServiceChecksApi(api_client)
-
+            api = self._service_checks_api or ServiceChecksApi(api_client)
             body = [
                 ServiceCheck(
                     check=check,

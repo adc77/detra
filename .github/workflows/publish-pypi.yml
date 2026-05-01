@@ -1,0 +1,100 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should-publish: ${{ steps.pypi.outputs.should-publish }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: python -m pip install --upgrade build twine
+
+      - name: Read package version
+        id: version
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+
+          with open("pyproject.toml", "rb") as f:
+              project = tomllib.load(f)["project"]
+
+          print(f"version={project['version']}")
+          PY
+
+      - name: Check whether version already exists on PyPI
+        id: pypi
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          import urllib.error
+          import urllib.request
+
+          version = os.environ["PACKAGE_VERSION"]
+          url = f"https://pypi.org/pypi/detra/{version}/json"
+
+          try:
+              urllib.request.urlopen(url, timeout=10)
+          except urllib.error.HTTPError as e:
+              if e.code == 404:
+                  print("should-publish=true")
+              else:
+                  raise
+          else:
+              print("should-publish=false")
+          PY
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    name: Publish distribution to PyPI
+    needs: build
+    if: needs.build.outputs.should-publish == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/detra
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -2,12 +2,9 @@
 
 import asyncio
 import time
-from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import google.genai as genai
 import structlog
-import tiktoken
 
 from detra.config.schema import GeminiConfig
 from detra.evaluation.prompts import (
@@ -16,59 +13,33 @@ from detra.evaluation.prompts import (
     ROOT_CAUSE_CLASSIFICATION_PROMPT,
     SECURITY_CHECK_PROMPT,
 )
+from detra.judges.base import BehaviorCheckResult, EvaluationResult
 from detra.utils.retry import RetryConfig, async_retry
 from detra.utils.serialization import extract_json_from_text, safe_json_dumps, truncate_string
 
 logger = structlog.get_logger()
 
-# Initialize tiktoken encoder for token counting
-# Using cl100k_base which is compatible with GPT models and provides reasonable estimates
-_token_encoder = tiktoken.get_encoding("cl100k_base")
+try:
+    import google.genai as genai
+except ImportError:
+    genai = None  # type: ignore[assignment]
+
+try:
+    import tiktoken
+    _token_encoder = tiktoken.get_encoding("cl100k_base")
+except ImportError:
+    _token_encoder = None
 
 
 def count_tokens(text: str) -> int:
-    """
-    Count tokens in text using tiktoken.
-    
-    Args:
-        text: Text to count tokens for.
-    
-    Returns:
-        Number of tokens.
-    """
     if not text:
         return 0
-    try:
-        return len(_token_encoder.encode(str(text)))
-    except Exception as e:
-        logger.warning("Failed to count tokens", error=str(e))
-        # Fallback: rough estimate (1 token ≈ 4 characters)
-        return len(str(text)) // 4
-
-
-@dataclass
-class BehaviorCheckResult:
-    """Result of a single behavior check."""
-    behavior: str
-    passed: bool
-    reasoning: str
-    confidence: float = 0.0
-    evidence: Optional[str] = None
-
-
-@dataclass
-class EvaluationResult:
-    """Complete evaluation result."""
-    score: float  # 0.0 to 1.0
-    flagged: bool
-    flag_reason: Optional[str] = None
-    flag_category: Optional[str] = None
-    checks_passed: list[BehaviorCheckResult] = field(default_factory=list)
-    checks_failed: list[BehaviorCheckResult] = field(default_factory=list)
-    security_issues: list[dict[str, Any]] = field(default_factory=list)
-    raw_evaluation: Optional[dict[str, Any]] = None
-    latency_ms: float = 0.0
-    eval_tokens_used: int = 0
+    if _token_encoder is not None:
+        try:
+            return len(_token_encoder.encode(str(text)))
+        except Exception:
+            pass
+    return len(str(text)) // 4
 
 
 class GeminiJudge:
@@ -87,20 +58,22 @@ class GeminiJudge:
             config: Gemini configuration.
         """
         self.config = config
-        self._client: Optional[genai.Client] = None
+        self._client = None
         self._setup_complete = False
 
     def _setup_client(self) -> None:
-        """Initialize Gemini client lazily."""
         if self._setup_complete:
             return
-
+        if genai is None:
+            raise ImportError(
+                "google-genai required for GeminiJudge.  Install with: pip install detra[gemini]"
+            )
         if not self.config.api_key:
             raise ValueError("Gemini API key not found in configuration")
 
         self._client = genai.Client(api_key=self.config.api_key)
         self._setup_complete = True
-        logger.info("Gemini client initialized", model=self.config.model.value)
+        logger.info("Gemini client initialized", model=self.config.model)
 
     async def evaluate(
         self,
@@ -138,6 +111,19 @@ class GeminiJudge:
         result.latency_ms = (time.time() - start_time) * 1000
         return result
 
+    # Alias required by the Judge protocol
+    async def evaluate_behaviors(
+        self,
+        input_data: Any,
+        output_data: Any,
+        expected_behaviors: list[str],
+        unexpected_behaviors: list[str],
+        context: dict[str, Any] | None = None,
+    ) -> EvaluationResult:
+        return await self.evaluate(
+            input_data, output_data, expected_behaviors, unexpected_behaviors, context
+        )
+
     async def _evaluate_batch(
         self,
         input_data: Any,
@@ -153,10 +139,9 @@ class GeminiJudge:
         input_str = truncate_string(str(input_data), 3000)
         output_str = truncate_string(str(output_data), 3000)
         prompt = BATCH_BEHAVIOR_CHECK_PROMPT.format(
-            input=input_str,
             input_data=input_str,
-            output=output_str,
             output_data=output_str,
+            context=truncate_string(safe_json_dumps(context or {}), 2000),
             expected_behaviors="\n".join(f"- {b}" for b in expected_behaviors),
             unexpected_behaviors="\n".join(f"- {b}" for b in unexpected_behaviors),
         )
@@ -353,9 +338,7 @@ class GeminiJudge:
         input_str = truncate_string(str(input_data), 2000)
         output_str = truncate_string(str(output_data), 2000)
         prompt = BEHAVIOR_CHECK_PROMPT.format(
-            input=input_str,
             input_data=input_str,
-            output=output_str,
             output_data=output_str,
             behavior=behavior,
             context=safe_json_dumps(context) if context else "None",
@@ -471,7 +454,6 @@ class GeminiJudge:
         output_str = truncate_string(str(output_data), 2000)
         prompt = SECURITY_CHECK_PROMPT.format(
             input_data=input_str,
-            output=output_str,
             output_data=output_str,
             checks=safe_json_dumps(checks),
         )
@@ -508,7 +490,7 @@ class GeminiJudge:
             response = await loop.run_in_executor(
                 None,
                 lambda: self._client.models.generate_content(
-                    model=self.config.model.value,
+                    model=self.config.model,
                     contents=prompt,
                 )
             )

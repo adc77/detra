@@ -1,174 +1,107 @@
 # detra
 
-**End-to-end LLM Observability for Vertical AI Applications with Datadog Integration**
+**LLM/agent observability for behavior deviations, guardrails, and telemetry.**
 
-detra is a comprehensive Python framework for monitoring, evaluating, and securing LLM applications. It provides automatic tracing, Gemini-powered evaluation, security scanning, alerting, and full integration with Datadog's LLM Observability platform.
+detra traces LLM and agent steps, compares outputs against configured behavior expectations, flags deviations, and ships metrics/events to your telemetry backend. Deterministic checks run first; LLM judges are optional and should be sampled or used with compact evidence.
 
-## Features
-
-- **Automatic Tracing**: Decorator-based tracing that captures inputs, outputs, and metadata
-- **LLM Evaluation**: Gemini-powered evaluation to check adherence to expected behaviors
-- **Security Scanning**: Detection of PII, prompt injection, and sensitive content
-- **Alerting**: Integration with Slack, PagerDuty, and custom webhooks
-- **Datadog Integration**: Full integration with Datadog LLM Observability, metrics, events, monitors, and dashboards
-- **Incident Management**: Automatic incident creation for critical issues
-
-## Installation
+## Install
 
 ```bash
-pip install detra
-
-# With optional dependencies
-pip install detra[server]      # FastAPI/uvicorn support
-pip install detra[dev]        # Development tools
-pip install detra[optimization]  # DSPy optimization
-pip install detra[all]        # All optional dependencies
+pip install detra                    # core only (6 deps)
+pip install "detra[litellm]"         # + any-model judge
+pip install "detra[otel]"            # + OpenTelemetry backend
+pip install "detra[datadog]"         # + Datadog backend
+pip install "detra[all]"             # everything
 ```
 
 ## Quick Start
 
-### 1. Install and Configure
+```python
+import detra
 
-```bash
-# Install
-pip install detra
+vg = detra.init("detra.yaml")
 
-# Set environment variables
-export DD_API_KEY=your_datadog_api_key
-export DD_APP_KEY=your_datadog_app_key
-export GOOGLE_API_KEY=your_google_api_key
+@vg.trace("refund_policy_agent")
+async def answer_refund_question(message: str):
+    result = await agent.run(message)
+    return result
+
+# Tracing + deviation checks happen automatically
+result = await answer_refund_question("Can I get a refund after 90 days?")
 ```
 
-### 2. Create Configuration
-
-Create `detra.yaml`:
+## Define Behaviors in YAML
 
 ```yaml
 app_name: my-llm-app
-datadog:
-  api_key: ${DD_API_KEY}
-  app_key: ${DD_APP_KEY}
-  site: datadoghq.com
-  service: my-service
 
-gemini:
-  api_key: ${GOOGLE_API_KEY}
-  model: gemini-2.5-flash
+judge_config:
+  provider: none        # or: litellm, gemini
+  model: gpt-4o-mini
+
+sampling:
+  rate: 0.1
 
 nodes:
-  extract_entities:
+  refund_policy_agent:
     expected_behaviors:
-      - "Must return valid JSON"
-      - "Must extract party names accurately"
+      - "Must answer with either eligible, ineligible, or needs_review"
+      - "Must mention the policy window when denying a refund"
+      - "Must route to needs_review for missing order dates"
     unexpected_behaviors:
-      - "Hallucinated party names"
-      - "Fabricated dates"
-    adherence_threshold: 0.85
-```
-
-### 3. Use in Your Code
-
-```python
-import detra
-
-# Initialize
-vg = detra.init("detra.yaml")
-
-# Decorate your LLM functions
-@vg.trace("extract_entities")
-async def extract_entities(document: str):
-    # Your LLM call here
-    result = await llm.complete(prompt)
-    return result
-
-# Use the function - tracing and evaluation happen automatically
-result = await extract_entities("Contract text...")
-```
-
-### 4. Setup Monitoring
-
-```python
-# Create monitors and dashboard
-setup_results = await vg.setup_all(slack_channel="#llm-alerts")
-print(f"Dashboard URL: {setup_results['dashboard']['url']}")
-```
-
-## Usage Examples
-
-### Basic Tracing
-
-```python
-import detra
-
-vg = detra.init("detra.yaml")
-
-@vg.trace("summarize")
-async def summarize(text: str):
-    return await llm.summarize(text)
-```
-
-### Different Trace Types
-
-```python
-@vg.workflow("document_processing")  # Workflow trace
-@vg.llm("llm_call")                  # LLM call trace
-@vg.task("data_extraction")         # Task trace
-@vg.agent("agent_name")              # Agent trace
-```
-
-### Manual Evaluation
-
-```python
-result = await vg.evaluate(
-    node_name="extract_entities",
-    input_data="Document text",
-    output_data={"entities": [...]},
-)
-print(f"Score: {result.score}, Flagged: {result.flagged}")
-```
-
-### Security Scanning
-
-```yaml
-nodes:
-  my_node:
+      - "Approves refunds outside the policy window"
+      - "Invents policy exceptions"
+      - "Asks for payment details"
+    adherence_threshold: 0.90
     security_checks:
       - pii_detection
       - prompt_injection
-      - sensitive_content
 ```
 
-### Alerting
+## Pluggable Architecture
 
-```yaml
-integrations:
-  slack:
-    enabled: true
-    webhook_url: ${SLACK_WEBHOOK_URL}
-    notify_on:
-      - flag_raised
-      - incident_created
-      - security_issue
-```
+**Backends** -- where telemetry goes:
+
+| Backend | Install | Use case |
+|---------|---------|----------|
+| Console | included | Local dev, CI |
+| OpenTelemetry | `detra[otel]` | Prometheus, Jaeger, OTLP |
+| Datadog | `detra[datadog]` | Datadog LLM Observability |
+| Custom | included | Implement the protocol |
+
+**Judges** -- optional reviewers for sampled or ambiguous behavior checks:
+
+| Judge | Install | Models |
+|-------|---------|--------|
+| LiteLLM | `detra[litellm]` | GPT-4o, Claude, Gemini, Llama, 100+ |
+| Gemini | `detra[gemini]` | Google Gemini models |
+| None | included | Rules-only mode |
 
 ## Evaluation Pipeline
 
-1. **Rule-Based Checks**: Fast validation (JSON format, empty output, etc.)
-2. **Security Scans**: PII detection, prompt injection scanning
-3. **LLM Evaluation**: Gemini-based semantic evaluation of behaviors
-4. **Flagging**: Automatic flagging when thresholds are breached
-5. **Alerting**: Notifications sent based on severity
+1. **Rule checks** (fast): empty output, JSON validity, length
+2. **Security scans**: PII, prompt injection, sensitive content
+3. **Behavior/deviation checks**: expected/unexpected behaviors from YAML spec
+4. **Optional sampled judge**: for ambiguous cases or compact evidence
+5. **Flag + alert**: when score < threshold or security issues found
 
-## Requirements
+## Decorator Types
 
-- Datadog account with API key and Application key
-- Google API key for Gemini evaluation (optional but recommended)
+```python
+@vg.trace("node")          # generic
+@vg.workflow("pipeline")   # workflow
+@vg.llm("model_call")     # LLM call
+@vg.task("processing")    # task
+@vg.agent("step")         # agent
+```
 
-## Documentation
+Works on sync and async functions. Safe inside running event loops (FastAPI, etc.).
 
-- **Github**: See [GitHub Repository](https://github.com/adc77/detra)
-- **Examples**: [examples/](https://github.com/adc77/detra/tree/main/examples)
+## Links
+
+- [GitHub](https://github.com/adc77/detra)
+- [Examples](https://github.com/adc77/detra/tree/main/examples)
 
 ## License
 
-MIT License
+MIT

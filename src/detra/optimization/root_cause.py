@@ -4,8 +4,12 @@ import asyncio
 import json
 from typing import Any, Optional
 
-import google.genai as genai
 import structlog
+
+try:
+    import google.genai as genai
+except ImportError:
+    genai = None  # type: ignore[assignment]
 
 logger = structlog.get_logger()
 
@@ -35,6 +39,11 @@ class RootCauseAnalyzer:
             api_key: Google API key for Gemini.
             model: Gemini model to use.
         """
+        if genai is None:
+            raise ImportError(
+                "google-genai is required for RootCauseAnalyzer. "
+                "Install with: pip install detra[gemini]"
+            )
         self.client = genai.Client(api_key=api_key)
         self.model = model
         self._analysis_cache: dict[str, dict[str, Any]] = {}

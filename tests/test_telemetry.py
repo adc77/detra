@@ -2,7 +2,7 @@
 
 import asyncio
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -31,18 +31,23 @@ class TestDatadogClient:
                                 client = DatadogClient(config)
 
                                 # Setup mock return values
+                                client._metrics_api = MagicMock()
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
                                 )
+                                client._events_api = MagicMock()
                                 client._events_api.create_event = MagicMock(
                                     return_value={"event": {"id": 123}}
                                 )
+                                client._monitors_api = MagicMock()
                                 client._monitors_api.create_monitor = MagicMock(
                                     return_value=MagicMock(id=456, name="test")
                                 )
+                                client._dashboards_api = MagicMock()
                                 client._dashboards_api.create_dashboard = MagicMock(
                                     return_value=MagicMock(id="abc", title="Test", url="http://test")
                                 )
+                                client._service_checks_api = MagicMock()
                                 client._service_checks_api.submit_service_check = MagicMock(
                                     return_value={"status": "ok"}
                                 )
@@ -73,7 +78,7 @@ class TestDatadogClient:
             alert_type="info",
             tags=["test:true"],
         )
-        assert result is True
+        assert result["id"] == 123
 
     @pytest.mark.asyncio
     async def test_submit_event_with_aggregation(self, client):
@@ -85,7 +90,7 @@ class TestDatadogClient:
             tags=[],
             aggregation_key="test-agg-key",
         )
-        assert result is True
+        assert result["id"] == 123
 
     @pytest.mark.asyncio
     async def test_create_monitor(self, client):
@@ -154,22 +159,27 @@ class TestLLMObsBridge:
         return sample_detra_config
 
     @pytest.fixture
-    def bridge(self, config):
+    def bridge(self, config, request):
         """Create an LLMObsBridge with mocked LLMObs."""
-        with patch("detra.telemetry.llmobs_bridge.LLMObs") as mock_llmobs:
-            mock_llmobs.enable = MagicMock()
-            mock_llmobs.disable = MagicMock()
-            mock_llmobs.flush = MagicMock()
-            mock_llmobs.annotate = MagicMock()
-            mock_llmobs.submit_evaluation = MagicMock()
-            mock_llmobs.workflow = MagicMock()
-            mock_llmobs.llm = MagicMock()
-            mock_llmobs.task = MagicMock()
-            mock_llmobs.agent = MagicMock()
+        patcher = patch("detra.telemetry.llmobs_bridge.LLMObs")
+        available_patcher = patch("detra.telemetry.llmobs_bridge._DDTRACE_AVAILABLE", True)
+        mock_llmobs = patcher.start()
+        available_patcher.start()
+        request.addfinalizer(patcher.stop)
+        request.addfinalizer(available_patcher.stop)
+        mock_llmobs.enable = MagicMock()
+        mock_llmobs.disable = MagicMock()
+        mock_llmobs.flush = MagicMock()
+        mock_llmobs.annotate = MagicMock()
+        mock_llmobs.submit_evaluation = MagicMock()
+        mock_llmobs.workflow = MagicMock()
+        mock_llmobs.llm = MagicMock()
+        mock_llmobs.task = MagicMock()
+        mock_llmobs.agent = MagicMock()
 
-            bridge = LLMObsBridge(config)
-            bridge._llmobs = mock_llmobs
-            return bridge
+        bridge = LLMObsBridge(config)
+        bridge._llmobs = mock_llmobs
+        return bridge
 
     def test_enable(self, bridge):
         """Test enabling LLM Observability."""
@@ -178,6 +188,7 @@ class TestLLMObsBridge:
 
     def test_disable(self, bridge):
         """Test disabling LLM Observability."""
+        bridge.enable()
         bridge.disable()
         bridge._llmobs.disable.assert_called()
 
@@ -243,9 +254,11 @@ class TestDatadogClientErrorHandling:
                                 client = DatadogClient(sample_datadog_config)
 
                                 # Setup to raise errors
+                                client._metrics_api = MagicMock()
                                 client._metrics_api.submit_metrics = MagicMock(
                                     side_effect=Exception("API Error")
                                 )
+                                client._events_api = MagicMock()
                                 client._events_api.create_event = MagicMock(
                                     side_effect=Exception("API Error")
                                 )
@@ -286,6 +299,7 @@ class TestEdgeCases:
                         with patch("detra.telemetry.datadog_client.IncidentsApi"):
                             with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
+                                client._metrics_api = MagicMock()
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
                                 )
@@ -305,6 +319,7 @@ class TestEdgeCases:
                         with patch("detra.telemetry.datadog_client.IncidentsApi"):
                             with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
+                                client._metrics_api = MagicMock()
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
                                 )
@@ -329,6 +344,7 @@ class TestEdgeCases:
                         with patch("detra.telemetry.datadog_client.IncidentsApi"):
                             with patch("detra.telemetry.datadog_client.ServiceChecksApi"):
                                 client = DatadogClient(sample_datadog_config)
+                                client._metrics_api = MagicMock()
                                 client._metrics_api.submit_metrics = MagicMock(
                                     return_value={"status": "ok"}
                                 )

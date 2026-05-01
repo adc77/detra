@@ -1,46 +1,49 @@
-"""
-detra: End-to-end LLM Observability for Vertical AI Applications
+"""detra: LLM Guardrails & Observability Framework
 
-A comprehensive framework for monitoring, evaluating, and securing
-LLM applications with Datadog integration.
+Usage::
 
-Usage:
     import detra
 
-    # Initialize with config file
     vg = detra.init("detra.yaml")
 
-    # Use decorators to trace functions
     @vg.trace("extract_entities")
-    def extract_entities(document):
-        return llm.complete(prompt)
-
-    # Or use module-level decorators after init
-    @detra.trace("summarize")
-    async def summarize(text):
-        return await llm.complete(prompt)
+    async def extract_entities(document):
+        return await model.complete(prompt)
 """
 
-import os
+from detra.backends.base import TelemetryBackend
+from detra.client import Detra, detra, get_client, init, is_initialized
+from detra.config.schema import DetraConfig, NodeConfig, detraConfig
+from detra.decorators.trace import agent, llm, task, trace, workflow
+from detra.judges.base import BehaviorCheckResult, EvaluationResult, Judge
 
-# Disable APM tracing to localhost:8126 BEFORE ddtrace is imported.
-# LLMObs uses agentless mode and sends directly to Datadog intake.
-# This MUST be set before any ddtrace imports to take effect.
-os.environ.setdefault("DD_TRACE_ENABLED", "false")
-os.environ.setdefault("DD_INSTRUMENTATION_TELEMETRY_ENABLED", "false")
+__version__ = "0.2.0"
 
-from detra.client import detra, init, get_client, is_initialized
-from detra.decorators.trace import trace, workflow, llm, task, agent
-from detra.config.schema import detraConfig, NodeConfig
-from detra.evaluation.gemini_judge import EvaluationResult, BehaviorCheckResult
-from detra.actions.cases import CaseManager
-from detra.optimization.root_cause import RootCauseAnalyzer
-from detra.optimization.dspy_optimizer import DSpyOptimizer
+_LEGACY_EXPORTS = {
+    "CaseManager": "detra.actions.cases",
+    "DSpyOptimizer": "detra.optimization.dspy_optimizer",
+    "RootCauseAnalyzer": "detra.optimization.root_cause",
+}
 
-__version__ = "0.1.0"
+
+def __getattr__(name: str):
+    if name in _LEGACY_EXPORTS:
+        import importlib
+        import warnings
+
+        warnings.warn(
+            f"detra.{name} is deprecated; import it from {_LEGACY_EXPORTS[name]} instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        module = importlib.import_module(_LEGACY_EXPORTS[name])
+        return getattr(module, name)
+    raise AttributeError(f"module 'detra' has no attribute {name!r}")
+
 
 __all__ = [
     # Client
+    "Detra",
     "detra",
     "init",
     "get_client",
@@ -52,15 +55,18 @@ __all__ = [
     "task",
     "agent",
     # Config
+    "DetraConfig",
     "detraConfig",
     "NodeConfig",
-    # Results
+    # Protocols / results
     "EvaluationResult",
     "BehaviorCheckResult",
-    # Optimization
+    "Judge",
+    "TelemetryBackend",
+    # Legacy exports
     "CaseManager",
-    "RootCauseAnalyzer",
     "DSpyOptimizer",
+    "RootCauseAnalyzer",
     # Version
     "__version__",
 ]

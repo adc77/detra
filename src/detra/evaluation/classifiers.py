@@ -59,15 +59,15 @@ class FailureClassifier:
     CATEGORY_KEYWORDS = {
         FailureCategory.HALLUCINATION: [
             "fabricated", "made up", "not in source", "invented",
-            "hallucinated", "not found in", "does not exist",
+            "hallucinated", "not found in", "not in the source", "does not exist",
         ],
         FailureCategory.FORMAT_ERROR: [
             "invalid json", "malformed", "parse error", "syntax error",
-            "wrong format", "missing key", "type error",
+            "wrong format", "missing key", "type error", "not json",
         ],
         FailureCategory.MISSING_CONTENT: [
             "empty", "missing", "not provided", "absent", "omitted",
-            "failed to include", "no response",
+            "failed to include", "no response", "no dates", "no dates found",
         ],
         FailureCategory.INSTRUCTION_VIOLATION: [
             "violated", "ignored instruction", "did not follow",

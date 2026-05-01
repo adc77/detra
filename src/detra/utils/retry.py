@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import inspect
 import random
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional, Type, TypeVar
@@ -104,7 +105,7 @@ async def async_retry(
 
     for attempt in range(config.max_retries):
         try:
-            if asyncio.iscoroutinefunction(func):
+            if inspect.iscoroutinefunction(func):
                 return await func(*args, **kwargs)
             else:
                 return func(*args, **kwargs)

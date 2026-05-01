@@ -41,6 +41,8 @@ class IncidentManager:
         """
         self.datadog = datadog_client
         self.notifications = notification_manager
+        self.datadog_client = datadog_client
+        self.notification_manager = notification_manager
         self._created_incidents: list[dict[str, Any]] = []
 
     async def handle_flag(
