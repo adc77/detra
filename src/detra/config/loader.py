@@ -62,7 +62,7 @@ def load_config(
     """Load config from YAML + env vars.  Env vars win on conflict."""
 
     if env_file:
-        load_dotenv(env_file)
+        load_dotenv(env_file, override=True)
     else:
         load_dotenv()
 

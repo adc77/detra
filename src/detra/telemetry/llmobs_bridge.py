@@ -33,14 +33,19 @@ class LLMObsBridge:
         self.config = config
         self._enabled = False
 
+    @staticmethod
+    def _require_llmobs():
+        if not _DDTRACE_AVAILABLE or LLMObs is None:
+            raise ImportError(
+                "ddtrace required for LLMObsBridge.  Install with: pip install detra[datadog]"
+            )
+        return LLMObs
+
     def enable(self) -> None:
         """Enable LLM Observability in agentless mode."""
         if self._enabled:
             return
-        if not _DDTRACE_AVAILABLE:
-            raise ImportError(
-                "ddtrace required for LLMObsBridge.  Install with: pip install detra[datadog]"
-            )
+        llmobs = self._require_llmobs()
 
         try:
             self._configure_ssl()
@@ -63,7 +68,7 @@ class LLMObsBridge:
             if self.config.datadog.version:
                 os.environ.setdefault("DD_VERSION", self.config.datadog.version)
 
-            LLMObs.enable(
+            llmobs.enable(
                 ml_app=self.config.app_name,
                 api_key=self.config.datadog.api_key,
                 site=site,
@@ -115,7 +120,11 @@ class LLMObsBridge:
         """Disable and flush LLM Observability."""
         if self._enabled:
             try:
-                LLMObs.flush()
+                llmobs = self._require_llmobs()
+                llmobs.flush()
+                disable = getattr(llmobs, "disable", None)
+                if callable(disable):
+                    disable()
             except Exception as e:
                 logger.warning("Error flushing LLMObs", error=str(e))
             self._enabled = False
@@ -135,7 +144,7 @@ class LLMObsBridge:
     ) -> None:
         """Annotate a span with input/output data."""
         try:
-            LLMObs.annotate(
+            LLMObsBridge._require_llmobs().annotate(
                 span=span,
                 input_data=input_data,
                 output_data=output_data,
@@ -155,7 +164,7 @@ class LLMObsBridge:
     ) -> None:
         """Submit an evaluation metric for a span."""
         try:
-            LLMObs.submit_evaluation(
+            LLMObsBridge._require_llmobs().submit_evaluation(
                 span=span,
                 label=label,
                 metric_type=metric_type,
@@ -169,14 +178,20 @@ class LLMObsBridge:
     @contextmanager
     def workflow(name: str):
         """Create a workflow span context manager."""
-        with LLMObs.workflow(name) as span:
+        with LLMObsBridge._require_llmobs().workflow(name) as span:
             yield span
 
     @staticmethod
     @contextmanager
-    def llm(model_name: str, name: Optional[str] = None, model_provider: Optional[str] = None):
+    def llm(*args, model_name: Optional[str] = None, name: Optional[str] = None, model_provider: Optional[str] = None):
         """Create an LLM span context manager."""
-        with LLMObs.llm(
+        if args:
+            if model_name is None:
+                model_name = args[0]
+            elif name is None:
+                name = args[0]
+        model_name = model_name or "unknown"
+        with LLMObsBridge._require_llmobs().llm(
             model_name=model_name,
             name=name,
             model_provider=model_provider,
@@ -187,21 +202,21 @@ class LLMObsBridge:
     @contextmanager
     def task(name: str):
         """Create a task span context manager."""
-        with LLMObs.task(name) as span:
+        with LLMObsBridge._require_llmobs().task(name) as span:
             yield span
 
     @staticmethod
     @contextmanager
     def agent(name: str):
         """Create an agent span context manager."""
-        with LLMObs.agent(name) as span:
+        with LLMObsBridge._require_llmobs().agent(name) as span:
             yield span
 
     @staticmethod
     def flush() -> None:
         """Flush all pending data."""
         try:
-            LLMObs.flush()
+            LLMObsBridge._require_llmobs().flush()
         except Exception as e:
             logger.warning("Error flushing LLMObs", error=str(e))
 
@@ -209,7 +224,7 @@ class LLMObsBridge:
     def export_span(span: Optional[Any] = None) -> Optional[dict]:
         """Export span context for distributed tracing."""
         try:
-            return LLMObs.export_span(span=span)
+            return LLMObsBridge._require_llmobs().export_span(span=span)
         except Exception as e:
             logger.warning("Failed to export span", error=str(e))
             return None

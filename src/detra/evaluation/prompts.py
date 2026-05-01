@@ -171,6 +171,9 @@ BATCH_BEHAVIOR_CHECK_PROMPT = """You are an expert evaluator for LLM outputs. Ev
 {output_data}
 ```
 
+## Additional Context
+{context}
+
 ## Behaviors to Check
 ### Expected (should be present):
 {expected_behaviors}

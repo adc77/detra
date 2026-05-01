@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import atexit
 from typing import Any, Optional
 
@@ -13,6 +14,7 @@ from detra.config.loader import load_config, set_config
 from detra.config.schema import (
     BackendType,
     DetraConfig,
+    GeminiConfig,
     JudgeProvider,
 )
 from detra.decorators.trace import (
@@ -76,6 +78,7 @@ class Detra:
         set_sampling_config(config.sampling)
 
         atexit.register(self._cleanup)
+        self._cleanup_task: asyncio.Task | None = None
 
         logger.info(
             "detra initialized",
@@ -130,21 +133,23 @@ class Detra:
         await self.backend.flush()
 
     async def close(self) -> None:
+        await self.backend.flush()
         await self.backend.close()
 
     def _cleanup(self) -> None:
-        import asyncio
+        async def shutdown() -> None:
+            await self.close()
 
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self.backend.flush())
+            self._cleanup_task = loop.create_task(shutdown())
         except RuntimeError:
             try:
-                asyncio.run(self.backend.flush())
-            except Exception:
-                pass
-        except Exception:
-            pass
+                asyncio.run(shutdown())
+            except Exception as e:
+                logger.warning("detra cleanup failed", error=str(e))
+        except Exception as e:
+            logger.warning("detra cleanup failed", error=str(e))
 
 
 # ---------------------------------------------------------------------------
@@ -178,8 +183,14 @@ def _resolve_backend(config: DetraConfig) -> TelemetryBackend:
 def _make_datadog(config: DetraConfig) -> TelemetryBackend:
     from detra.backends.datadog import DatadogBackend
 
-    if not config.datadog:
-        raise ValueError("datadog config section required for Datadog backend")
+    if (
+        not config.datadog
+        or not config.datadog.api_key
+        or not config.datadog.app_key
+        or config.datadog.api_key.startswith("${")
+        or config.datadog.app_key.startswith("${")
+    ):
+        raise ValueError("datadog.api_key and datadog.app_key are required for Datadog backend")
     return DatadogBackend(config.datadog)
 
 
@@ -193,23 +204,28 @@ def _resolve_judge(config: DetraConfig) -> Judge | None:
     """Pick a judge: explicit config > legacy Gemini creds > None."""
 
     jc = config.judge_config
-    if jc and jc.provider == JudgeProvider.LITELLM:
+    if jc.provider == JudgeProvider.LITELLM:
         try:
             from detra.judges.litellm_judge import LiteLLMJudge
 
             return LiteLLMJudge(
-                model=jc.model,
+                model=jc.model or "gpt-4o-mini",
                 api_key=jc.api_key,
                 temperature=jc.temperature,
                 max_tokens=jc.max_tokens,
             )
-        except ImportError:
-            logger.warning("litellm not installed -- falling back to legacy judge detection")
-    if jc and jc.provider == JudgeProvider.GEMINI:
+        except ImportError as e:
+            raise ImportError("judge_config.provider=litellm requires detra[litellm]") from e
+    if jc.provider == JudgeProvider.GEMINI:
+        config.gemini = config.gemini or GeminiConfig()
+        if jc.api_key:
+            config.gemini.api_key = jc.api_key
+        if jc.model:
+            config.gemini.model = jc.model
         try:
             return _make_gemini(config)
-        except ImportError:
-            logger.warning("google-genai not installed for judge_config.provider=gemini")
+        except ImportError as e:
+            raise ImportError("judge_config.provider=gemini requires detra[gemini]") from e
 
     # Legacy: Gemini section with a real key
     if (

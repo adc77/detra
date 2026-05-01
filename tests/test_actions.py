@@ -1,8 +1,5 @@
 """Tests for the actions module."""
 
-import json
-from datetime import datetime
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,6 +14,19 @@ from detra.actions.notifications import NotificationManager
 from detra.actions.alerts import AlertHandler, AlertType, Alert, AlertSeverity
 from detra.actions.cases import CaseManager, Case, CaseStatus
 from detra.actions.incidents import IncidentManager
+
+
+@pytest.fixture
+def mock_notification_manager():
+    """Create a mock notification manager."""
+    manager = MagicMock()
+    manager.notify = AsyncMock()
+    manager.notify_flag = AsyncMock()
+    manager.notify_security = AsyncMock()
+    manager.notify_incident = AsyncMock()
+    manager.send_slack = AsyncMock(return_value=True)
+    manager.send_pagerduty = AsyncMock(return_value=True)
+    return manager
 
 
 class TestNotificationManager:
@@ -193,6 +203,8 @@ class TestAlertHandler:
         """Create a mock notification manager."""
         manager = MagicMock()
         manager.notify = AsyncMock()
+        manager.notify_flag = AsyncMock()
+        manager.notify_security = AsyncMock()
         manager.send_slack = AsyncMock(return_value=True)
         manager.send_pagerduty = AsyncMock(return_value=True)
         return manager
@@ -371,6 +383,7 @@ class TestIncidentManager:
         """Create a mock notification manager."""
         manager = MagicMock()
         manager.notify = AsyncMock()
+        manager.notify_incident = AsyncMock()
         return manager
 
     @pytest.fixture

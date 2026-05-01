@@ -8,8 +8,6 @@ import structlog
 
 from detra.config.schema import (
     IntegrationsConfig,
-    PagerDutyConfig,
-    SlackConfig,
     WebhookConfig,
 )
 
@@ -236,7 +234,7 @@ class NotificationManager:
 
         await self._post_to_slack(payload)
 
-    async def _post_to_slack(self, payload: dict[str, Any]) -> None:
+    async def _post_to_slack(self, payload: dict[str, Any]) -> bool:
         """Post a payload to Slack."""
         try:
             client = await self._get_client()
@@ -246,8 +244,10 @@ class NotificationManager:
             )
             response.raise_for_status()
             logger.debug("Slack notification sent")
+            return True
         except Exception as e:
             logger.error("Failed to send Slack notification", error=str(e))
+            return False
 
     async def _send_pagerduty_alert(
         self,
@@ -396,8 +396,7 @@ class NotificationManager:
             ]
 
         try:
-            await self._post_to_slack(payload)
-            return True
+            return await self._post_to_slack(payload)
         except Exception:
             return False
 

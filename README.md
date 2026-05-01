@@ -32,7 +32,7 @@ result = await extract_entities("Contract text...")
 
 ## How It Works
 
-```
+```text
 Your LLM function
        |
   @vg.trace()
@@ -264,7 +264,7 @@ All metrics are prefixed with `detra.` and tagged with `node` and `span_kind`.
 
 ## Architecture
 
-```
+```text
 src/detra/
 ├── __init__.py              # Public API
 ├── client.py                # Detra client, init(), resolution logic

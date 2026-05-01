@@ -5,8 +5,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # ---------------------------------------------------------------------------
@@ -46,10 +46,18 @@ class SamplingConfig(BaseModel):
 class JudgeConfig(BaseModel):
     """Config for the pluggable LLM judge."""
     provider: JudgeProvider = JudgeProvider.NONE
-    model: str = "gpt-4o-mini"
+    model: Optional[str] = None
     api_key: Optional[str] = None
     temperature: float = Field(default=0.1, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1024, ge=1, le=16384)
+
+    @model_validator(mode="after")
+    def set_provider_default_model(self) -> "JudgeConfig":
+        if self.provider == JudgeProvider.LITELLM and not self.model:
+            self.model = "gpt-4o-mini"
+        elif self.provider == JudgeProvider.GEMINI and not self.model:
+            self.model = "gemini-2.5-flash"
+        return self
 
 
 class DatadogConfig(BaseModel):
@@ -64,9 +72,13 @@ class DatadogConfig(BaseModel):
     ssl_cert_path: Optional[str] = None
 
 
+def _is_resolved_secret(value: Optional[str]) -> bool:
+    return bool(value and not value.startswith("${"))
+
+
 class GeminiConfig(BaseModel):
     """Gemini judge config (legacy -- prefer JudgeConfig for new setups)."""
-    api_key: Optional[str] = None
+    api_key: Optional[str] = Field(default=None, validate_default=True)
     project_id: Optional[str] = None
     location: str = "us-central1"
     model: str = Field(default="gemini-2.5-flash")
@@ -88,11 +100,17 @@ class NodeConfig(BaseModel):
     expected_behaviors: list[str] = Field(default_factory=list)
     unexpected_behaviors: list[str] = Field(default_factory=list)
     adherence_threshold: float = Field(default=0.8, ge=0.0, le=1.0)
-    latency_warning_ms: int = 3000
-    latency_critical_ms: int = 10000
+    latency_warning_ms: int = Field(default=3000, ge=0)
+    latency_critical_ms: int = Field(default=10000, ge=0)
     evaluation_prompts: dict[str, str] = Field(default_factory=dict)
     security_checks: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_latency_thresholds(self) -> "NodeConfig":
+        if self.latency_warning_ms > self.latency_critical_ms:
+            raise ValueError("latency_warning_ms must be <= latency_critical_ms")
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -181,7 +199,7 @@ class DetraConfig(BaseModel):
 
     # v0.2 pluggable architecture
     backend: BackendType = BackendType.AUTO
-    judge_config: Optional[JudgeConfig] = Field(default_factory=JudgeConfig)
+    judge_config: JudgeConfig = Field(default_factory=JudgeConfig)
     sampling: SamplingConfig = Field(default_factory=SamplingConfig)
 
     # Legacy / optional provider configs
@@ -206,6 +224,17 @@ class DetraConfig(BaseModel):
             raise ValueError("app_name must be 193 characters or less")
         return v
 
+    @model_validator(mode="after")
+    def validate_explicit_backend(self) -> "DetraConfig":
+        if self.backend == BackendType.DATADOG:
+            if (
+                not self.datadog
+                or not _is_resolved_secret(self.datadog.api_key)
+                or not _is_resolved_secret(self.datadog.app_key)
+            ):
+                raise ValueError("backend=datadog requires datadog.api_key and datadog.app_key")
+        return self
+
 
 # Backward compat aliases
 detraConfig = DetraConfig
@@ -213,6 +242,8 @@ detraConfig = DetraConfig
 
 class DetraSettings(BaseSettings):
     """Environment-based settings that override YAML values."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     dd_api_key: Optional[str] = Field(default=None, alias="DD_API_KEY")
     dd_app_key: Optional[str] = Field(default=None, alias="DD_APP_KEY")
@@ -228,12 +259,6 @@ class DetraSettings(BaseSettings):
 
     slack_webhook_url: Optional[str] = Field(default=None, alias="SLACK_WEBHOOK_URL")
     slack_channel: str = Field(default="#llm-alerts", alias="SLACK_CHANNEL")
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
-
 
 # Backward compat alias
 detraSettings = DetraSettings

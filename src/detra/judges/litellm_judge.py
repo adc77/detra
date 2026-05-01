@@ -9,7 +9,7 @@ Requires: pip install detra[litellm]
 from __future__ import annotations
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -70,6 +70,7 @@ class LiteLLMJudge:
         prompt = BATCH_BEHAVIOR_CHECK_PROMPT.format(
             input_data=input_str,
             output_data=output_str,
+            context=truncate_string(safe_json_dumps(context or {}), 2000),
             expected_behaviors="\n".join(f"- {b}" for b in expected_behaviors),
             unexpected_behaviors="\n".join(f"- {b}" for b in unexpected_behaviors),
         )

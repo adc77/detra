@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from detra.config.schema import (
     AlertConfig,
+    BackendType,
     DatadogConfig,
     Environment,
     GeminiConfig,
@@ -194,6 +195,15 @@ class TestdetraConfig:
         assert Environment.DEVELOPMENT.value == "development"
         assert Environment.STAGING.value == "staging"
         assert Environment.PRODUCTION.value == "production"
+
+    def test_explicit_datadog_rejects_unresolved_placeholders(self):
+        """Explicit Datadog backend needs real credentials, not literal placeholders."""
+        with pytest.raises(ValidationError):
+            detraConfig(
+                app_name="test",
+                backend=BackendType.DATADOG,
+                datadog=DatadogConfig(api_key="${DD_API_KEY}", app_key="${DD_APP_KEY}"),
+            )
 
 
 class TestConfigLoader:

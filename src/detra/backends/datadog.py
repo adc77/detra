@@ -6,7 +6,6 @@ Requires: pip install detra[datadog]
 from __future__ import annotations
 
 import time
-from typing import Any
 
 try:
     from detra.telemetry.datadog_client import DatadogClient

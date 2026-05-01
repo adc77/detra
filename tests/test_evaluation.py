@@ -36,14 +36,15 @@ class TestPrompts:
 
     def test_behavior_check_prompt_format(self):
         """Test that behavior check prompt has required placeholders."""
-        assert "{input}" in BEHAVIOR_CHECK_PROMPT
-        assert "{output}" in BEHAVIOR_CHECK_PROMPT
+        assert "{input_data}" in BEHAVIOR_CHECK_PROMPT
+        assert "{output_data}" in BEHAVIOR_CHECK_PROMPT
         assert "{behavior}" in BEHAVIOR_CHECK_PROMPT
 
     def test_batch_behavior_check_prompt_format(self):
         """Test batch behavior check prompt format."""
-        assert "{input}" in BATCH_BEHAVIOR_CHECK_PROMPT
-        assert "{output}" in BATCH_BEHAVIOR_CHECK_PROMPT
+        assert "{input_data}" in BATCH_BEHAVIOR_CHECK_PROMPT
+        assert "{output_data}" in BATCH_BEHAVIOR_CHECK_PROMPT
+        assert "{context}" in BATCH_BEHAVIOR_CHECK_PROMPT
         assert "{expected_behaviors}" in BATCH_BEHAVIOR_CHECK_PROMPT
         assert "{unexpected_behaviors}" in BATCH_BEHAVIOR_CHECK_PROMPT
 
@@ -54,7 +55,7 @@ class TestPrompts:
 
     def test_security_check_prompt_format(self):
         """Test security check prompt format."""
-        assert "{output}" in SECURITY_CHECK_PROMPT
+        assert "{output_data}" in SECURITY_CHECK_PROMPT
 
 
 class TestRuleEvaluator:
@@ -285,7 +286,7 @@ class TestEvaluationEngine:
     def mock_judge(self):
         """Create a mock GeminiJudge."""
         judge = MagicMock()
-        judge.evaluate = AsyncMock(return_value=EvaluationResult(
+        result = EvaluationResult(
             score=0.9,
             flagged=False,
             flag_category=None,
@@ -301,7 +302,10 @@ class TestEvaluationEngine:
             security_issues=[],
             latency_ms=100,
             eval_tokens_used=500,
-        ))
+        )
+        judge.evaluate = AsyncMock(return_value=result)
+        judge.evaluate_behaviors = AsyncMock(return_value=result)
+        judge.check_security = AsyncMock(return_value=[])
         return judge
 
     @pytest.fixture

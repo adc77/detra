@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import inspect
 import random
 import time
 from typing import Any, Callable, Optional, TypeVar
@@ -30,11 +31,78 @@ T = TypeVar("T")
 _backend: Optional[TelemetryBackend] = None
 _engine: Optional[Any] = None  # EvaluationEngine -- avoid circular import
 _sampling: SamplingConfig = SamplingConfig()
+_background_tasks: set[asyncio.Task] = set()
+
+
+class _DatadogClientBackend:
+    """Adapter from the old DatadogClient API to the backend protocol."""
+
+    def __init__(self, client):
+        self._client = client
+
+    async def emit_gauge(self, name: str, value: float, tags: dict[str, str] | None = None) -> None:
+        await self._submit("gauge", name, value, tags)
+
+    async def emit_count(self, name: str, value: int, tags: dict[str, str] | None = None) -> None:
+        await self._submit("count", name, value, tags)
+
+    async def emit_distribution(
+        self, name: str, value: float, tags: dict[str, str] | None = None,
+    ) -> None:
+        await self._submit("gauge", name, value, tags)
+
+    async def emit_event(
+        self,
+        title: str,
+        text: str,
+        level: str = "info",
+        tags: dict[str, str] | None = None,
+    ) -> None:
+        await self._client.submit_event(
+            title=title,
+            text=text,
+            alert_type="error" if level in {"error", "critical"} else level,
+            tags=self._tags(tags),
+        )
+
+    async def flush(self) -> None:
+        return None
+
+    async def close(self) -> None:
+        close = getattr(self._client, "close", None)
+        if close:
+            result = close()
+            if inspect.isawaitable(result):
+                await result
+
+    async def _submit(
+        self, metric_type: str, name: str, value: float, tags: dict[str, str] | None,
+    ) -> None:
+        await self._client.submit_metrics([
+            {
+                "metric": name,
+                "type": metric_type,
+                "points": [[time.time(), value]],
+                "tags": self._tags(tags),
+            }
+        ])
+
+    @staticmethod
+    def _tags(tags: dict[str, str] | None) -> list[str]:
+        return [f"{k}:{v}" for k, v in (tags or {}).items()]
 
 
 def set_backend(backend: TelemetryBackend) -> None:
     global _backend
     _backend = backend
+
+
+def set_datadog_client(client) -> None:
+    """Deprecated compatibility shim for the v0.1 Datadog client setter."""
+    if hasattr(client, "emit_count"):
+        set_backend(client)
+    else:
+        set_backend(_DatadogClientBackend(client))
 
 
 def set_evaluation_engine(engine) -> None:
@@ -78,7 +146,7 @@ class DetraTrace:
         self.output_extractor = output_extractor or _default_output_extractor
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return self._wrap_async(func)
         return self._wrap_sync(func)
 
@@ -115,56 +183,79 @@ class DetraTrace:
         start = time.time()
         tags = {"node": self.node_name, "span_kind": self.span_kind}
 
-        input_data = self.input_extractor(args, kwargs) if self.capture_input else None
+        input_data = self._extract_input(args, kwargs)
         eval_result: Optional[EvaluationResult] = None
 
         try:
-            output_data = (await func(*args, **kwargs)) if is_async else func(*args, **kwargs)
+            raw_output = (await func(*args, **kwargs)) if is_async else func(*args, **kwargs)
+            output_data = self._extract_output(raw_output)
             latency_ms = (time.time() - start) * 1000
 
-            if self.evaluate and _engine and _should_evaluate():
-                eval_result = await self._run_eval(input_data, output_data)
-
-            await self._emit(latency_ms, eval_result, tags, error=None)
+            eval_result = await self._maybe_eval(input_data, output_data)
+            await self._safe_emit(latency_ms, eval_result, tags, error=None)
 
             if eval_result and eval_result.flagged:
-                await self._emit_flag(eval_result, input_data, output_data, tags)
+                await self._safe_emit_flag(eval_result, input_data, output_data, tags)
 
-            return output_data
+            return raw_output
 
         except Exception as e:
             latency_ms = (time.time() - start) * 1000
-            await self._emit(latency_ms, None, tags, error=e)
+            await self._safe_emit(latency_ms, None, tags, error=e)
             raise
 
     def _execute_sync(self, func: Callable, args: tuple, kwargs: dict) -> Any:
         """Sync fallback when called from inside an already-running loop."""
         start = time.time()
+        tags = {"node": self.node_name, "span_kind": self.span_kind}
+        input_data = self._extract_input(args, kwargs)
         try:
-            result = func(*args, **kwargs)
+            raw_output = func(*args, **kwargs)
+            output_data = self._extract_output(raw_output)
             latency_ms = (time.time() - start) * 1000
-            self._fire_and_forget(
-                self._emit(
-                    latency_ms,
-                    None,
-                    {"node": self.node_name, "span_kind": self.span_kind},
-                    error=None,
-                )
-            )
-            return result
+            self._fire_and_forget(self._post_success(latency_ms, input_data, output_data, tags))
+            return raw_output
         except Exception as e:
             latency_ms = (time.time() - start) * 1000
-            self._fire_and_forget(
-                self._emit(
-                    latency_ms,
-                    None,
-                    {"node": self.node_name, "span_kind": self.span_kind},
-                    error=e,
-                )
-            )
+            self._fire_and_forget(self._safe_emit(latency_ms, None, tags, error=e))
             raise
 
     # -- evaluation --------------------------------------------------------
+
+    def _extract_input(self, args: tuple, kwargs: dict) -> Any:
+        if not self.capture_input:
+            return None
+        try:
+            return self.input_extractor(args, kwargs)
+        except Exception as e:
+            logger.warning("Input extraction failed", node=self.node_name, error=str(e))
+            return None
+
+    def _extract_output(self, raw_output: Any) -> Any:
+        if not self.capture_output:
+            return None
+        try:
+            return self.output_extractor(raw_output)
+        except Exception as e:
+            logger.warning("Output extraction failed", node=self.node_name, error=str(e))
+            return None
+
+    async def _post_success(
+        self,
+        latency_ms: float,
+        input_data: Any,
+        output_data: Any,
+        tags: dict[str, str],
+    ) -> None:
+        eval_result = await self._maybe_eval(input_data, output_data)
+        await self._safe_emit(latency_ms, eval_result, tags, error=None)
+        if eval_result and eval_result.flagged:
+            await self._safe_emit_flag(eval_result, input_data, output_data, tags)
+
+    async def _maybe_eval(self, input_data: Any, output_data: Any) -> Optional[EvaluationResult]:
+        if self.evaluate and _engine and _should_evaluate():
+            return await self._run_eval(input_data, output_data)
+        return None
 
     async def _run_eval(self, input_data: Any, output_data: Any) -> Optional[EvaluationResult]:
         from detra.config.loader import get_node_config
@@ -183,6 +274,39 @@ class DetraTrace:
             return None
 
     # -- telemetry ---------------------------------------------------------
+
+    async def _safe_emit(
+        self,
+        latency_ms: float,
+        eval_result: Optional[EvaluationResult],
+        tags: dict[str, str],
+        *,
+        error: Optional[Exception],
+    ) -> None:
+        try:
+            await self._emit(latency_ms, eval_result, tags, error=error)
+        except Exception as emit_error:
+            logger.warning(
+                "Telemetry emission failed",
+                node=self.node_name,
+                error=str(emit_error),
+            )
+
+    async def _safe_emit_flag(
+        self,
+        eval_result: EvaluationResult,
+        input_data: Any,
+        output_data: Any,
+        tags: dict[str, str],
+    ) -> None:
+        try:
+            await self._emit_flag(eval_result, input_data, output_data, tags)
+        except Exception as emit_error:
+            logger.warning(
+                "Telemetry flag emission failed",
+                node=self.node_name,
+                error=str(emit_error),
+            )
 
     async def _emit(
         self,
@@ -252,9 +376,11 @@ class DetraTrace:
     def _fire_and_forget(coro) -> None:
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(coro)
+            task = loop.create_task(coro)
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
         except RuntimeError:
-            pass
+            coro.close()
 
 
 # ---------------------------------------------------------------------------
@@ -296,3 +422,7 @@ def task(node_name: str, **kw) -> DetraTrace:
 
 def agent(node_name: str, **kw) -> DetraTrace:
     return DetraTrace(node_name, span_kind="agent", **kw)
+
+
+# Backward compat alias
+detraTrace = DetraTrace

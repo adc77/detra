@@ -10,12 +10,16 @@ from __future__ import annotations
 
 from typing import Any
 
+import structlog
+
 try:
     from opentelemetry import metrics, trace
 
     _OTEL_AVAILABLE = True
 except ImportError:
     _OTEL_AVAILABLE = False
+
+logger = structlog.get_logger()
 
 
 class OTelBackend:
@@ -82,10 +86,23 @@ class OTelBackend:
                 span.set_attribute(f"detra.{k}", v)
 
     async def flush(self) -> None:
-        pass
+        for provider in (metrics.get_meter_provider(), trace.get_tracer_provider()):
+            force_flush = getattr(provider, "force_flush", None)
+            if callable(force_flush):
+                try:
+                    force_flush()
+                except Exception as e:
+                    logger.warning("OpenTelemetry force_flush failed", error=str(e))
 
     async def close(self) -> None:
-        pass
+        await self.flush()
+        for provider in (metrics.get_meter_provider(), trace.get_tracer_provider()):
+            shutdown = getattr(provider, "shutdown", None)
+            if callable(shutdown):
+                try:
+                    shutdown()
+                except Exception as e:
+                    logger.warning("OpenTelemetry shutdown failed", error=str(e))
 
     # -- instrument factories (lazy) ---------------------------------------
 
