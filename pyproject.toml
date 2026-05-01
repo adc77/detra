@@ -1,7 +1,7 @@
 [project]
 name = "detra"
 version = "0.2.0"
-description = "LLM guardrails & observability -- pluggable backends, any-model evaluation"
+description = "LLM/agent observability for behavior deviations, guardrails, and telemetry"
 readme = "README_PYPI.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}

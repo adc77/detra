@@ -1,8 +1,8 @@
 # detra
 
-**LLM Guardrails & Observability -- pluggable backends, any-model evaluation.**
+**LLM/agent observability for behavior deviations, guardrails, and telemetry.**
 
-detra evaluates LLM outputs against a YAML behavior spec, flags violations, and ships metrics to any telemetry backend. No vendor lock-in.
+detra traces LLM and agent steps, compares outputs against configured behavior expectations, flags deviations, and ships metrics/events to your telemetry backend. Deterministic checks run first; LLM judges are optional and should be sampled or used with compact evidence.
 
 ## Install
 
@@ -21,13 +21,13 @@ import detra
 
 vg = detra.init("detra.yaml")
 
-@vg.trace("extract_entities")
-async def extract_entities(doc: str):
-    result = await llm.complete(prompt)
+@vg.trace("refund_policy_agent")
+async def answer_refund_question(message: str):
+    result = await agent.run(message)
     return result
 
-# Tracing + evaluation happen automatically
-result = await extract_entities("Contract text...")
+# Tracing + deviation checks happen automatically
+result = await answer_refund_question("Can I get a refund after 90 days?")
 ```
 
 ## Define Behaviors in YAML
@@ -36,20 +36,23 @@ result = await extract_entities("Contract text...")
 app_name: my-llm-app
 
 judge_config:
-  provider: litellm
+  provider: none        # or: litellm, gemini
   model: gpt-4o-mini
 
 sampling:
   rate: 0.1
 
 nodes:
-  extract_entities:
+  refund_policy_agent:
     expected_behaviors:
-      - "Must return valid JSON"
-      - "Party names must come from the source document"
+      - "Must answer with either eligible, ineligible, or needs_review"
+      - "Must mention the policy window when denying a refund"
+      - "Must route to needs_review for missing order dates"
     unexpected_behaviors:
-      - "Hallucinated party names"
-    adherence_threshold: 0.85
+      - "Approves refunds outside the policy window"
+      - "Invents policy exceptions"
+      - "Asks for payment details"
+    adherence_threshold: 0.90
     security_checks:
       - pii_detection
       - prompt_injection
@@ -66,7 +69,7 @@ nodes:
 | Datadog | `detra[datadog]` | Datadog LLM Observability |
 | Custom | included | Implement the protocol |
 
-**Judges** -- which LLM evaluates outputs:
+**Judges** -- optional reviewers for sampled or ambiguous behavior checks:
 
 | Judge | Install | Models |
 |-------|---------|--------|
@@ -77,9 +80,10 @@ nodes:
 ## Evaluation Pipeline
 
 1. **Rule checks** (fast): empty output, JSON validity, length
-2. **Security scans**: PII, prompt injection (LLM-assisted)
-3. **Behavior eval**: expected/unexpected behaviors from YAML spec
-4. **Flag + alert**: when score < threshold or security issues found
+2. **Security scans**: PII, prompt injection, sensitive content
+3. **Behavior/deviation checks**: expected/unexpected behaviors from YAML spec
+4. **Optional sampled judge**: for ambiguous cases or compact evidence
+5. **Flag + alert**: when score < threshold or security issues found
 
 ## Decorator Types
 

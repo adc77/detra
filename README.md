@@ -1,8 +1,8 @@
 # detra
 
-LLM Guardrails & Observability -- pluggable backends, any-model evaluation.
+LLM/agent observability for behavior deviations, guardrails, and telemetry.
 
-detra evaluates LLM outputs against a YAML behavior spec, flags violations, and ships metrics to any telemetry backend. No vendor lock-in: swap the backend (Console, OpenTelemetry, Datadog) and the judge (GPT-4o, Claude, Gemini, Llama, ...) without changing application code.
+detra traces LLM and agent steps, compares outputs against configured behavior expectations, flags deviations, and ships metrics/events to your telemetry backend. It starts with deterministic checks and observability signals; LLM judges are optional and should be sampled or used with compact evidence.
 
 ## Install
 
@@ -22,35 +22,34 @@ import detra
 
 vg = detra.init("detra.yaml")
 
-@vg.trace("extract_entities")
-async def extract_entities(doc: str):
-    return await llm.complete(prompt)
+@vg.trace("refund_policy_agent")
+async def answer_refund_question(message: str):
+    return await agent.run(message)
 
-result = await extract_entities("Contract text...")
-# -> telemetry emitted, behaviors evaluated, flags raised if needed
+result = await answer_refund_question("Can I get a refund after 90 days?")
+# -> latency, status, rule checks, deviation score, and flags are emitted
 ```
 
 ## How It Works
 
 ```text
-Your LLM function
+Your LLM / agent step
        |
   @vg.trace()
        |
-  +---------+     +-----------+     +------------------+
-  | Measure  | --> | Evaluate  | --> | Emit telemetry   |
-  | latency  |    | behaviors |     | via backend      |
-  +---------+     +-----------+     +------------------+
-                       |
-                  Judge (any LLM)
-                  checks expected/
-                  unexpected behaviors
-                  from YAML spec
+  +---------+     +---------------+     +------------------+
+  | Trace   | --> | Check rules & | --> | Emit telemetry   |
+  | runtime |     | deviations    |     | via backend      |
+  +---------+     +---------------+     +------------------+
+                         |
+                  Optional sampled judge
+                  for ambiguous behavior
 ```
 
-1. **Decorator** wraps your function, measures latency.
-2. **Evaluation engine** runs rule-based checks, then asks the configured **Judge** (any LLM) to assess output against the behavior spec.
-3. **Backend** ships metrics, events, and flags to your telemetry system.
+1. **Decorator** wraps your function and captures latency, errors, input/output summaries, and node metadata.
+2. **Evaluation engine** runs deterministic checks first, then computes behavior/deviation signals from your YAML spec.
+3. **Optional Judge** can review sampled or ambiguous cases, ideally with compact evidence instead of full source context.
+4. **Backend** ships metrics, events, and flags to your telemetry system.
 
 ## Configuration
 
@@ -64,10 +63,10 @@ environment: production
 # Backend: where telemetry goes (auto | console | otel | datadog)
 backend: auto
 
-# Judge: which LLM evaluates outputs
+# Optional judge: use for sampled or ambiguous behavior checks
 judge_config:
-  provider: litellm          # or: gemini, none
-  model: gpt-4o-mini         # any litellm-compatible model string
+  provider: none             # or: litellm, gemini
+  model: gpt-4o-mini
   temperature: 0.1
 
 # Sampling: don't eval every request in prod
@@ -75,29 +74,32 @@ sampling:
   rate: 0.1                  # evaluate 10% of requests
   always_sample_errors: true
 
-# Behavior spec per node
+# Behavior/deviation spec per node
 nodes:
-  extract_entities:
-    description: "Extract legal entities from documents"
+  refund_policy_agent:
+    description: "Answer refund questions from the approved policy"
     expected_behaviors:
-      - "Must return valid JSON"
-      - "Party names must come from the source document"
+      - "Must answer with either eligible, ineligible, or needs_review"
+      - "Must mention the policy window when denying a refund"
+      - "Must route to needs_review for missing order dates"
     unexpected_behaviors:
-      - "Hallucinated party names"
-      - "Fabricated dates not in source"
-    adherence_threshold: 0.85
+      - "Approves refunds outside the policy window"
+      - "Invents policy exceptions"
+      - "Asks for payment details"
+    adherence_threshold: 0.90
     security_checks:
       - pii_detection
       - prompt_injection
 
-  summarize_document:
-    description: "Summarize legal documents"
+  tool_router:
+    description: "Choose the right tool for customer support requests"
     expected_behaviors:
-      - "Summary captures key terms and obligations"
-      - "Preserves factual accuracy"
+      - "Must call lookup_order before giving order-specific answers"
+      - "Must not call refund_payment without eligibility"
     unexpected_behaviors:
-      - "Includes information not in the original document"
-    adherence_threshold: 0.80
+      - "Skips required lookup"
+      - "Calls destructive tools without confirmation"
+    adherence_threshold: 0.95
 
 # Thresholds for alerting
 thresholds:
@@ -170,7 +172,7 @@ vg = detra.init("detra.yaml", backend=MyBackend())
 
 ## Judges
 
-Judges are the LLMs that evaluate your app's outputs against the behavior spec.
+Judges are optional LLM reviewers for behavior checks that deterministic rules cannot decide. Use them with sampling and compact evidence to avoid doubling production token cost.
 
 | Judge | Install | Models |
 |-------|---------|--------|
@@ -222,25 +224,25 @@ All decorators work on both sync and async functions. Sync functions called from
 ## Evaluation Pipeline
 
 1. **Rule-based checks** (fast, deterministic): empty output, JSON validity, length limits
-2. **Security scans** (LLM-assisted): PII detection, prompt injection
-3. **Behavior evaluation** (LLM judge): checks expected/unexpected behaviors from YAML spec
-4. **Flagging**: automatic when score < threshold or security issues found
-5. **Telemetry**: metrics, events, and flag alerts shipped via backend
+2. **Security scans**: PII detection, prompt injection, sensitive content
+3. **Behavior/deviation checks**: compare output against expected/unexpected behavior from YAML
+4. **Optional sampled judge**: review ambiguous cases or compact evidence, not necessarily full inputs
+5. **Flagging + telemetry**: emit scores, events, latency, and alerts via backend
 
 ### Manual evaluation
 
 ```python
 result = await vg.evaluate(
-    node_name="extract_entities",
-    input_data="Contract text...",
-    output_data={"entities": [...]},
+    node_name="refund_policy_agent",
+    input_data={"policy_window_days": 30, "order_age_days": 90},
+    output_data={"decision": "eligible", "reason": "customer asked politely"},
 )
 print(f"Score: {result.score}, Flagged: {result.flagged}")
 ```
 
 ### Evaluation result fields
 
-- `score` -- adherence score (0.0 to 1.0)
+- `score` -- adherence/deviation score (0.0 to 1.0)
 - `flagged` -- whether the output was flagged
 - `flag_category` -- category (hallucination, format_error, etc.)
 - `flag_reason` -- human-readable reason
